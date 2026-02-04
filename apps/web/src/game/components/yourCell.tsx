@@ -5,6 +5,8 @@ import { type YourCellState } from "../types";
 
 interface YourCellProps {
   state?: YourCellState;
+  onHoverIn?: () => void;
+  onHoverOut?: () => void;
 }
 
 const CELL_SIZE = 32;
@@ -18,7 +20,11 @@ const RADIUS_SMALL = 4;
  * Ship parts from Figma: left/right/top/bottom (rounded ends), body (all small radius)
  * Variants: safe (orange), hit (red + marker), sunk (red + marker, no fill)
  */
-export default function YourCell({ state = "neutral" }: YourCellProps) {
+export default function YourCell({
+  state = "neutral",
+  onHoverIn,
+  onHoverOut,
+}: YourCellProps) {
   // Parse state into parts
   const isShip = state !== "neutral";
   const isSafe = state.startsWith("ship-safe");
@@ -112,6 +118,8 @@ export default function YourCell({ state = "neutral" }: YourCellProps) {
       justifyContent="center"
       alignItems="center"
       position="relative"
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
       {...borderRadiusStyles}
     >
       {/* Hit marker - red dot */}

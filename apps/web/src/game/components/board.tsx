@@ -96,7 +96,14 @@ export default function Board({
           const cellState: YourCellState =
             yourCells?.get(coordinate) ?? "neutral";
 
-          cells.push(<YourCell key={coordinate} state={cellState} />);
+          cells.push(
+            <YourCell
+              key={coordinate}
+              state={cellState}
+              onHoverIn={() => setHoveredCell(coordinate)}
+              onHoverOut={() => setHoveredCell(null)}
+            />
+          );
         }
       }
     }
@@ -128,10 +135,14 @@ export default function Board({
         {renderCells()}
       </View>
 
-      {/* Bottom label */}
-      <UText variant="label-sm" color="$neutral_400">
-        B:10
-      </UText>
+      {/* Bottom label - shows hovered cell coordinate */}
+      <View height={16}>
+        {hoveredCell && (
+          <UText variant="label-sm" color="$neutral_400">
+            {hoveredCell.charAt(0)}:{hoveredCell.slice(1)}
+          </UText>
+        )}
+      </View>
     </YStack>
   );
 }
