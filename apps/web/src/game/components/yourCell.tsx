@@ -122,11 +122,14 @@ export default function YourCell({
     }
   };
 
-  // Whether to show hit marker (red dot)
+  // Whether to show hit marker
   const showHitMarker = isHit || isSunk;
 
-  // Background - sunk has no fill, others have neutral_800
-  const backgroundColor = isSunk ? "transparent" : "$neutral_800";
+  // Marker color - dark dot on red background for sunk, red dot for hit
+  const getMarkerColor = () => (isSunk ? "$neutral_800" : "$destructive_500");
+
+  // Background - sunk has red fill, others have neutral_800
+  const backgroundColor = isSunk ? "$destructive_500" : "$neutral_800";
 
   const borderRadiusStyles = getBorderRadius();
 
@@ -151,15 +154,18 @@ export default function YourCell({
       onMouseDown={isShip && onDragStart ? onDragStart : undefined}
       cursor={cursorStyle}
       opacity={opacity}
+      style={{
+        transition: "background-color 50ms ease-out, opacity 50ms ease-out",
+      } as React.CSSProperties}
       {...borderRadiusStyles}
     >
-      {/* Hit marker - red dot */}
+      {/* Hit marker - red dot for hit, dark dot for sunk */}
       {showHitMarker && (
         <View
           width={8}
           height={8}
           borderRadius="$round"
-          backgroundColor="$destructive_500"
+          backgroundColor={getMarkerColor()}
         />
       )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { type BattleLogEntry } from "../types";
@@ -9,11 +9,12 @@ interface BattleLogProps {
   entries: BattleLogEntry[];
 }
 
-// Glass effect styles (from Figma)
-const glassStyle: React.CSSProperties = {
+// Base glass effect styles (from Figma)
+const baseGlassStyle: React.CSSProperties = {
   backdropFilter: "blur(6px)",
   WebkitBackdropFilter: "blur(6px)",
   backgroundColor: "rgba(26, 33, 48, 0.5)",
+  transition: "background-color 300ms ease-out",
 };
 
 // Max height for scrollable entries container
@@ -24,6 +25,11 @@ const MAX_ENTRIES_HEIGHT = 300;
  * Shows chronological record of actions with glass effect.
  * Entries are sorted by timestamp and scrollable.
  * Color coding: YOU = secondary (orange), ENEMY = primary (blue)
+ * 
+ * Latest entry is highlighted (full saturation), older entries are dimmed.
+ * When a ship is sunk, background changes:
+ * - YOU sunk enemy: orange tint
+ * - ENEMY sunk you: blue tint
  */
 export default function BattleLog({ entries }: BattleLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -34,6 +40,23 @@ export default function BattleLog({ entries }: BattleLogProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [entries.length]);
+
+  // Get latest entry for background color
+  const latestEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+
+  // Calculate glass style based on latest entry
+  const glassStyle = useMemo((): React.CSSProperties => {
+    if (latestEntry?.result === "sunk") {
+      // YOU sunk enemy ship -> orange background
+      // ENEMY sunk your ship -> blue background
+      const bgColor =
+        latestEntry.actor === "you"
+          ? "rgba(255, 155, 0, 0.3)" // secondary_500 with alpha
+          : "rgba(59, 130, 246, 0.3)"; // primary_500 with alpha
+      return { ...baseGlassStyle, backgroundColor: bgColor };
+    }
+    return baseGlassStyle;
+  }, [latestEntry]);
 
   return (
     <View
@@ -68,8 +91,12 @@ export default function BattleLog({ entries }: BattleLogProps) {
             }}
           >
             <YStack gap={8}>
-              {entries.map((entry) => (
-                <BattleLogEntryRow key={entry.id} entry={entry} />
+              {entries.map((entry, index) => (
+                <BattleLogEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  isLatest={index === entries.length - 1}
+                />
               ))}
             </YStack>
           </div>
@@ -81,9 +108,10 @@ export default function BattleLog({ entries }: BattleLogProps) {
 
 interface BattleLogEntryRowProps {
   entry: BattleLogEntry;
+  isLatest: boolean;
 }
 
-function BattleLogEntryRow({ entry }: BattleLogEntryRowProps) {
+function BattleLogEntryRow({ entry, isLatest }: BattleLogEntryRowProps) {
   // Color based on actor (following design system conventions)
   // YOU = secondary (orange), ENEMY = primary (blue)
   const actorColor =
@@ -98,8 +126,11 @@ function BattleLogEntryRow({ entry }: BattleLogEntryRowProps) {
     return entry.result.charAt(0).toUpperCase() + entry.result.slice(1);
   };
 
+  // Older entries are dimmed (reduced opacity)
+  const opacity = isLatest ? 1 : 0.5;
+
   return (
-    <YStack gap="$1" paddingVertical="$1">
+    <YStack gap="$1" paddingVertical="$1" opacity={opacity}>
       {/* Actor + Coordinate */}
       <UText variant="label-md" color={actorColor}>
         {actorText} → {entry.coordinate}

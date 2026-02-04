@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback } from "react";
 import { YStack } from "tamagui";
 import { useMutation } from "convex/react";
 import { Check } from "@phosphor-icons/react";
@@ -10,6 +10,7 @@ import { api } from "@server/_generated/api";
 import { UPage } from "@/lib/components/core/layout";
 import { UText } from "@/lib/components/core/text";
 import { UIconTextButton } from "@/lib/components/core/button";
+import { FadeTransition } from "@/lib/components/core/transitions";
 import { PlayerStatus, ShareLinkBox } from "@/lib/components/lobby";
 import useAnalytics from "@/lib/analytics/useAnalytics";
 
@@ -68,42 +69,44 @@ export default function LobbyPhase({ gameId, deviceId, game }: LobbyPhaseProps) 
     : "waiting";
 
   return (
-    <UPage>
-      <YStack flex={1} justifyContent="center" alignItems="center" gap="$7">
-        {/* Header */}
-        <YStack alignItems="center" gap="$2">
-          <UText variant="h1" color="$neutral_200">
-            AWAITING ENEMY
-          </UText>
-          <UText variant="body-md" color="$neutral_400">
-            Share this link to invite an opponent
-          </UText>
-        </YStack>
+    <FadeTransition>
+      <UPage>
+        <YStack flex={1} justifyContent="center" alignItems="center" gap="$7">
+          {/* Header */}
+          <YStack alignItems="center" gap="$2">
+            <UText variant="h1" color="$neutral_200">
+              AWAITING ENEMY
+            </UText>
+            <UText variant="body-md" color="$neutral_400">
+              Share this link to invite an opponent
+            </UText>
+          </YStack>
 
-        {/* Share Link */}
-        <ShareLinkBox
-          url={inviteLink || "Loading..."}
-          eventBuilder={copyButtonEvent}
-        />
+          {/* Share Link */}
+          <ShareLinkBox
+            url={inviteLink || "Loading..."}
+            eventBuilder={copyButtonEvent}
+          />
 
-        {/* Player Status */}
-        <YStack gap={10} alignItems="center">
-          <PlayerStatus role="you" state={yourState} />
-          <PlayerStatus role="opponent" state={opponentState} />
+          {/* Player Status */}
+          <YStack gap={10} alignItems="center">
+            <PlayerStatus role="you" state={yourState} />
+            <PlayerStatus role="opponent" state={opponentState} />
 
-          {/* Ready Button */}
-          <YStack paddingTop="$5" width={300}>
-            <UIconTextButton
-              text={isReady ? "WAITING..." : "READY"}
-              icon={<Check size={20} weight="regular" />}
-              variant="glow"
-              fullWidth
-              onPress={handleReady}
-              eventBuilder={readyButtonEvent}
-            />
+            {/* Ready Button */}
+            <YStack paddingTop="$5" width={300}>
+              <UIconTextButton
+                text={isReady ? "WAITING..." : "READY"}
+                icon={<Check size={20} weight="regular" />}
+                variant="glow"
+                fullWidth
+                onPress={handleReady}
+                eventBuilder={readyButtonEvent}
+              />
+            </YStack>
           </YStack>
         </YStack>
-      </YStack>
-    </UPage>
+      </UPage>
+    </FadeTransition>
   );
 }

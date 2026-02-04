@@ -69,6 +69,8 @@ interface GameUIState {
   timeRemainingMs: number;
   enemyShipsRemaining: number;
   playerShipsRemaining: number;
+  enemySunkShips: string[]; // Ship types sunk by player (e.g., ["destroyer", "submarine"])
+  playerSunkShips: string[]; // Ship types sunk by enemy (e.g., ["carrier"])
   enemyCells: Map<Coordinate, EnemyCellState>;
   yourCells: Map<Coordinate, YourCellState>;
   battleLog: BattleLogEntry[];
@@ -392,40 +394,50 @@ export function useGameState({
     return cells;
   }, [game, deviceId]);
 
-  // Calculate enemy ships remaining (based on sunk ship types we know about)
-  const enemyShipsRemaining = useMemo(() => {
-    if (!game || !opponentDeviceId) return 5;
+  // Calculate enemy ships remaining and track which are sunk
+  const { enemyShipsRemaining, enemySunkShips } = useMemo(() => {
+    if (!game || !opponentDeviceId) return { enemyShipsRemaining: 5, enemySunkShips: [] as string[] };
 
     const opponentBoard = game.boards[opponentDeviceId];
-    if (!opponentBoard) return 5;
+    if (!opponentBoard) return { enemyShipsRemaining: 5, enemySunkShips: [] as string[] };
 
-    // Count unique sunk ship types from our shots
-    const sunkShipTypes = new Set<string>();
+    // Collect unique sunk ship types from our shots
+    const sunkShipTypes: string[] = [];
+    const seenTypes = new Set<string>();
     for (const shot of opponentBoard.shotsReceived) {
-      if (shot.result === "sunk" && shot.sunkShipType) {
-        sunkShipTypes.add(shot.sunkShipType);
+      if (shot.result === "sunk" && shot.sunkShipType && !seenTypes.has(shot.sunkShipType)) {
+        seenTypes.add(shot.sunkShipType);
+        sunkShipTypes.push(shot.sunkShipType);
       }
     }
 
-    return 5 - sunkShipTypes.size;
+    return {
+      enemyShipsRemaining: 5 - sunkShipTypes.length,
+      enemySunkShips: sunkShipTypes,
+    };
   }, [game, opponentDeviceId]);
 
-  // Calculate player ships remaining
-  const playerShipsRemaining = useMemo(() => {
-    if (!game || !deviceId) return 5;
+  // Calculate player ships remaining and track which are sunk
+  const { playerShipsRemaining, playerSunkShips } = useMemo(() => {
+    if (!game || !deviceId) return { playerShipsRemaining: 5, playerSunkShips: [] as string[] };
 
     const myBoard = game.boards[deviceId];
-    if (!myBoard) return 5;
+    if (!myBoard) return { playerShipsRemaining: 5, playerSunkShips: [] as string[] };
 
-    // Count ships that aren't sunk
-    let remaining = 0;
-    for (const ship of myBoard.ships) {
-      if (!isShipSunk(ship, myBoard.shotsReceived)) {
-        remaining++;
+    // Track sunk ships from shots received on our board
+    const sunkShipTypes: string[] = [];
+    const seenTypes = new Set<string>();
+    for (const shot of myBoard.shotsReceived) {
+      if (shot.result === "sunk" && shot.sunkShipType && !seenTypes.has(shot.sunkShipType)) {
+        seenTypes.add(shot.sunkShipType);
+        sunkShipTypes.push(shot.sunkShipType);
       }
     }
 
-    return remaining;
+    return {
+      playerShipsRemaining: 5 - sunkShipTypes.length,
+      playerSunkShips: sunkShipTypes,
+    };
   }, [game, deviceId]);
 
   // Strategist threshold: show guidance when < 7 seconds remaining
@@ -632,6 +644,8 @@ export function useGameState({
       timeRemainingMs,
       enemyShipsRemaining,
       playerShipsRemaining,
+      enemySunkShips,
+      playerSunkShips,
       enemyCells,
       yourCells,
       battleLog,
@@ -645,6 +659,8 @@ export function useGameState({
     timeRemainingMs,
     enemyShipsRemaining,
     playerShipsRemaining,
+    enemySunkShips,
+    playerSunkShips,
     enemyCells,
     yourCells,
     battleLog,

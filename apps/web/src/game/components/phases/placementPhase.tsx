@@ -72,6 +72,8 @@ export default function PlacementPhase({
 
   // Track if we've already triggered the timer expiry mutation
   const timerExpiredRef = useRef(false);
+  // Track if we've auto-deployed when timer is about to expire
+  const autoDeployedRef = useRef(false);
 
   // Drag-and-drop functionality
   const {
@@ -118,6 +120,27 @@ export default function PlacementPhase({
     const interval = setInterval(updateTimer, 100);
     return () => clearInterval(interval);
   }, [game.placementStartedAt, game.placementDurationMs]);
+
+  // Auto-deploy when timer is about to expire (~500ms)
+  // This ensures user's modifications are saved even if they don't click "Deploy Fleet"
+  useEffect(() => {
+    // Only trigger when time is between 0 and 500ms and not already deploying
+    if (timeRemainingMs > 500 || timeRemainingMs <= 0) return;
+    if (autoDeployedRef.current || isCommitting) return;
+
+    // Mark as triggered to prevent multiple calls
+    autoDeployedRef.current = true;
+
+    // Commit current placement before time runs out
+    commitPlacement({
+      gameId: typedGameId,
+      deviceId,
+      ships,
+    }).catch((error) => {
+      console.error("Auto-deploy failed:", error);
+      // Don't reset ref on error - we don't want to retry auto-deploy
+    });
+  }, [timeRemainingMs, isCommitting, commitPlacement, typedGameId, deviceId, ships]);
 
   // Auto-advance when timer expires
   useEffect(() => {

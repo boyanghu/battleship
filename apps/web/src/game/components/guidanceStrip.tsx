@@ -12,11 +12,12 @@ interface GuidanceStripProps {
   eventBuilder: LogEventBuilder;
 }
 
-// Glass effect styles (from Figma)
+// Glass effect styles (from Figma) with slide-up animation
 const glassStyle: React.CSSProperties = {
   backdropFilter: "blur(6px)",
   WebkitBackdropFilter: "blur(6px)",
   backgroundColor: "rgba(26, 33, 48, 0.5)",
+  animation: "slideUp 200ms ease-out",
 };
 
 /**
@@ -41,6 +42,20 @@ export default function GuidanceStrip({
     <>
       {/* Inject glow animation keyframes */}
       <GlowStyles />
+
+      {/* Slide animation keyframes */}
+      <style jsx global>{`
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
 
       <View
         paddingHorizontal="$4"

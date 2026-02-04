@@ -9,6 +9,7 @@ import {
   BattleLog,
   Battlefield,
   GuidanceStrip,
+  ShipScoreboard,
 } from "../index";
 import { type EffectInstance } from "../effects";
 import { useGameState, useThrottledHover } from "../../hooks";
@@ -173,6 +174,14 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
           timeRemainingMs={state.timeRemainingMs}
           enemyShipsRemaining={state.enemyShipsRemaining}
           playerShipsRemaining={state.playerShipsRemaining}
+        />
+      </View>
+
+      {/* Ship Scoreboard - Below HUD */}
+      <View position="absolute" top={95} left={0} right={0} zIndex={10}>
+        <ShipScoreboard
+          enemySunkShips={state.enemySunkShips}
+          playerSunkShips={state.playerSunkShips}
         />
       </View>
 

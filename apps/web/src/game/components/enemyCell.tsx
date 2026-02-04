@@ -33,14 +33,17 @@ export default function EnemyCell({
   });
   // Background color based on state
   const getBackgroundColor = () => {
-    if (state === "sunk") return "transparent";
+    if (state === "sunk") return "$destructive_500"; // Red background for sunk
     if (state === "miss") return "$neutral_900";
     if (state === "hover") return "$neutral_700";
     return "$neutral_800";
   };
 
-  // Whether to show hit/sunk marker (red dot)
+  // Whether to show hit/sunk marker
   const showHitMarker = state === "hit" || state === "sunk";
+
+  // Marker color - dark dot on red background for sunk, red dot for hit
+  const getMarkerColor = () => (state === "sunk" ? "$neutral_800" : "$destructive_500");
 
   // Whether to show miss marker (white hollow circle)
   const showMissMarker = state === "miss";
@@ -63,15 +66,18 @@ export default function EnemyCell({
         onHoverIn={onHoverIn}
         onHoverOut={onHoverOut}
         hoverStyle={{ backgroundColor: "$neutral_700" }}
-        style={isGlow ? glowStyle : undefined}
+        style={{
+          transition: "background-color 50ms ease-out",
+          ...(isGlow ? glowStyle : {}),
+        } as React.CSSProperties}
       >
-        {/* Hit/Sunk marker - red dot */}
+        {/* Hit/Sunk marker - red dot for hit, dark dot for sunk */}
         {showHitMarker && (
           <View
             width={8}
             height={8}
             borderRadius="$round"
-            backgroundColor="$destructive_500"
+            backgroundColor={getMarkerColor()}
           />
         )}
 
