@@ -12,6 +12,7 @@ import {
   type Coord,
   type Shot
 } from "../helpers";
+import { scheduleBotMoveIfNeeded } from "../bot";
 
 export const fireShotHandler = async (
   ctx: MutationCtx,
@@ -131,6 +132,14 @@ export const fireShotHandler = async (
     deviceId: opponentDeviceId,
     turnStartedAt: timestamp,
     turnDurationMs: TURN_DURATION_MS
+  });
+
+  // Schedule bot move if it's the bot's turn (PvE mode)
+  await scheduleBotMoveIfNeeded(ctx, args.gameId, {
+    mode: game.mode,
+    status: "battle",
+    currentTurnDeviceId: opponentDeviceId,
+    turnStartedAt: timestamp
   });
 
   return { result, sunkShipType, gameOver: false };

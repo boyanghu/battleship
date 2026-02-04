@@ -300,6 +300,15 @@ export function useGameState({
       hitCoords.set(`${shot.coord.x},${shot.coord.y}`, shot);
     }
 
+    // Build a set of ship cell coordinates
+    const shipCellSet = new Set<string>();
+    for (const ship of myBoard.ships) {
+      const shipCells = getShipCells(ship);
+      for (const cell of shipCells) {
+        shipCellSet.add(`${cell.x},${cell.y}`);
+      }
+    }
+
     // Process each ship
     for (const ship of myBoard.ships) {
       const shipCells = getShipCells(ship);
@@ -321,6 +330,15 @@ export function useGameState({
 
         cells.set(coord, state);
       });
+    }
+
+    // Process misses (shots that hit water, not ships)
+    for (const shot of myBoard.shotsReceived) {
+      const key = `${shot.coord.x},${shot.coord.y}`;
+      if (shot.result === "miss" && !shipCellSet.has(key)) {
+        const coord = coordToString(shot.coord);
+        cells.set(coord, "miss");
+      }
     }
 
     return cells;

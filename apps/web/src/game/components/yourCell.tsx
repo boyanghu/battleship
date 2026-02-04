@@ -25,6 +25,7 @@ const RADIUS_SMALL = 4;
  * Ship parts from Figma: left/right/top/bottom (rounded ends), body (all small radius)
  * Variants: safe (orange), hit (red + marker), sunk (red + marker, no fill)
  * Rotate variants (-rotate suffix): show rotate button for placement phase
+ * Miss state: shows hollow circle for enemy shots that hit water
  */
 export default function YourCell({
   state = "neutral",
@@ -41,8 +42,11 @@ export default function YourCell({
     ? (state.replace("-rotate", "") as YourCellState)
     : state;
 
+  // Check for miss state (enemy shot that hit water)
+  const isMiss = baseState === "miss";
+
   // Parse state into parts
-  const isShip = baseState !== "neutral";
+  const isShip = baseState !== "neutral" && !isMiss;
   const isSafe = baseState.startsWith("ship-safe");
   const isHit = baseState.startsWith("ship-hit");
   const isSunk = baseState.startsWith("ship-sunk");
@@ -158,8 +162,20 @@ export default function YourCell({
         />
       )}
 
+      {/* Miss marker - white hollow circle (enemy shot that missed) */}
+      {isMiss && (
+        <View
+          width={8}
+          height={8}
+          borderRadius="$round"
+          borderWidth={2}
+          borderColor="$neutral_400"
+          backgroundColor="transparent"
+        />
+      )}
+
       {/* Neutral cell (no ship) - just dark background */}
-      {!isShip && (
+      {!isShip && !isMiss && (
         <View
           position="absolute"
           top={0}

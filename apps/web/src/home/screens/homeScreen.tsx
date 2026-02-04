@@ -50,10 +50,16 @@ export default function HomeScreen() {
     }
   }, [deviceId, creating, createGame, router]);
 
-  const handleTraining = useCallback(() => {
-    // TODO: Implement training session when backend ready
-    router.push("/game/demo");
-  }, [router]);
+  const handleTraining = useCallback(async () => {
+    if (!deviceId || creating) return;
+    setCreating(true);
+    try {
+      const result = await createGame({ deviceId, mode: "pve" });
+      router.push(`/game/${result.gameId}`);
+    } finally {
+      setCreating(false);
+    }
+  }, [deviceId, creating, createGame, router]);
 
   return (
     <UPage>
@@ -82,6 +88,7 @@ export default function HomeScreen() {
             text="TRAINING SESSION"
             icon={<Robot size={20} weight="regular" />}
             variant="secondary"
+            disabled={!deviceId || creating}
             onPress={handleTraining}
             eventBuilder={trainingButtonEvent}
           />

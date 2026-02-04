@@ -10,8 +10,8 @@ import {
   getContentColor,
   variantColors,
   disabledColors,
-  glowBoxShadow,
 } from "./buttonStyles";
+import { useGlowAnimation, staticGlowStyle } from "@/lib/styles";
 import type { LogEventBuilder } from "@/lib/analytics";
 
 interface UTextButtonProps {
@@ -35,6 +35,7 @@ const StyledButton = styled(Button, {
 /**
  * Text button component from Figma design system.
  * Supports primary, glow, secondary, and ghost variants.
+ * Glow variant features pulsating animation (1s duration).
  * Requires eventBuilder prop for analytics tracking.
  */
 const UTextButton = forwardRef<TamaguiElement, UTextButtonProps>(
@@ -58,6 +59,17 @@ const UTextButton = forwardRef<TamaguiElement, UTextButtonProps>(
       : colors.backgroundColor;
 
     const isGlow = variant === "glow" && !disabled;
+    const { GlowStyles, glowStyle } = useGlowAnimation({
+      duration: 1000,
+      enabled: isGlow,
+    });
+
+    // Determine the glow style to apply
+    const buttonGlowStyle = isGlow
+      ? glowStyle
+      : variant === "glow" && disabled
+        ? staticGlowStyle
+        : undefined;
 
     const handlePress = useCallback(() => {
       eventBuilder.setAction("Press").log();
@@ -65,37 +77,40 @@ const UTextButton = forwardRef<TamaguiElement, UTextButtonProps>(
     }, [eventBuilder, onPress]);
 
     return (
-      <StyledButton
-        ref={ref}
-        onPress={disabled ? undefined : handlePress}
-        disabled={disabled}
-        height={sizeStyles.height}
-        paddingHorizontal={sizeStyles.paddingHorizontal}
-        borderRadius={sizeStyles.borderRadius}
-        gap={sizeStyles.gap}
-        backgroundColor={backgroundColor}
-        width={fullWidth ? "100%" : undefined}
-        pressStyle={
-          disabled
-            ? undefined
-            : {
-                backgroundColor: colors.pressedBackgroundColor,
-              }
-        }
-        hoverStyle={
-          disabled
-            ? undefined
-            : {
-                backgroundColor: colors.pressedBackgroundColor,
-                opacity: 0.9,
-              }
-        }
-        style={isGlow ? { boxShadow: glowBoxShadow } : undefined}
-      >
-        <UText variant={sizeStyles.textVariant} color={textColor}>
-          {text}
-        </UText>
-      </StyledButton>
+      <>
+        {isGlow && <GlowStyles />}
+        <StyledButton
+          ref={ref}
+          onPress={disabled ? undefined : handlePress}
+          disabled={disabled}
+          height={sizeStyles.height}
+          paddingHorizontal={sizeStyles.paddingHorizontal}
+          borderRadius={sizeStyles.borderRadius}
+          gap={sizeStyles.gap}
+          backgroundColor={backgroundColor}
+          width={fullWidth ? "100%" : undefined}
+          pressStyle={
+            disabled
+              ? undefined
+              : {
+                  backgroundColor: colors.pressedBackgroundColor,
+                }
+          }
+          hoverStyle={
+            disabled
+              ? undefined
+              : {
+                  backgroundColor: colors.pressedBackgroundColor,
+                  opacity: 0.9,
+                }
+          }
+          style={buttonGlowStyle}
+        >
+          <UText variant={sizeStyles.textVariant} color={textColor}>
+            {text}
+          </UText>
+        </StyledButton>
+      </>
     );
   }
 );

@@ -8,7 +8,11 @@
  * @module
  */
 
+import type * as bot from "../bot.js";
 import type * as games from "../games.js";
+import type * as games_bot_index from "../games/bot/index.js";
+import type * as games_bot_scheduleBotMove from "../games/bot/scheduleBotMove.js";
+import type * as games_bot_strategist from "../games/bot/strategist.js";
 import type * as games_helpers from "../games/helpers.js";
 import type * as games_mutations_advanceFromCountdown from "../games/mutations/advanceFromCountdown.js";
 import type * as games_mutations_advanceFromPlacement from "../games/mutations/advanceFromPlacement.js";
@@ -31,7 +35,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  bot: typeof bot;
   games: typeof games;
+  "games/bot/index": typeof games_bot_index;
+  "games/bot/scheduleBotMove": typeof games_bot_scheduleBotMove;
+  "games/bot/strategist": typeof games_bot_strategist;
   "games/helpers": typeof games_helpers;
   "games/mutations/advanceFromCountdown": typeof games_mutations_advanceFromCountdown;
   "games/mutations/advanceFromPlacement": typeof games_mutations_advanceFromPlacement;

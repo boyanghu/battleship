@@ -19,6 +19,7 @@ export type EnemyCellState =
 // Rotate variants (-rotate suffix) show a rotate button for placement phase
 export type YourCellState =
   | "neutral"
+  | "miss" // Enemy shot that missed (hit water)
   | "ship-safe-left"
   | "ship-safe-right"
   | "ship-safe-top"

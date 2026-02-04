@@ -2,6 +2,7 @@ import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { TURN_DURATION_MS } from "../../lib/constants";
 import { appendEvent, getOpponentDeviceId, now } from "../helpers";
+import { scheduleBotMoveIfNeeded } from "../bot";
 
 export const advanceTurnIfExpiredHandler = async (
   ctx: MutationCtx,
@@ -58,6 +59,14 @@ export const advanceTurnIfExpiredHandler = async (
     deviceId: opponentDeviceId,
     turnStartedAt: timestamp,
     turnDurationMs: TURN_DURATION_MS
+  });
+
+  // Schedule bot move if it's the bot's turn (PvE mode)
+  await scheduleBotMoveIfNeeded(ctx, args.gameId, {
+    mode: game.mode,
+    status: "battle",
+    currentTurnDeviceId: opponentDeviceId,
+    turnStartedAt: timestamp
   });
 
   return { skipped: true, skippedDeviceId: currentDeviceId };

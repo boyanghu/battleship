@@ -4,6 +4,7 @@
  */
 import type { TextVariant } from "../text/textVariant";
 import type { ButtonSize, ButtonVariant } from "./buttonTypes";
+import { glowBoxShadow } from "@/lib/styles/glowAnimation";
 
 /**
  * Size configuration for button components.
@@ -104,19 +105,5 @@ export const getContentColor = (
   return disabled ? disabledColors.textColor : variantColors[variant].textColor;
 };
 
-/**
- * Glow effect from Figma - 4 layered drop shadows.
- * Used for the "glow" variant buttons.
- *
- * Figma effect definition:
- * - Effect(type: DROP_SHADOW, color: secondary/500, offset: (0, -2), radius: 24, spread: -4)
- * - Effect(type: DROP_SHADOW, color: secondary/300, offset: (0, -1), radius: 4, spread: 0)
- * - Effect(type: DROP_SHADOW, color: primary/500, offset: (0, 4), radius: 26, spread: -4)
- * - Effect(type: DROP_SHADOW, color: primary/300, offset: (0, 2), radius: 4, spread: 0)
- */
-export const glowBoxShadow = `
-  0px 2px 4px 0px #7fb2ff,
-  0px 4px 26px -4px #3b82f6,
-  0px -1px 4px 0px #ffd08a,
-  0px -2px 24px -4px #ff9b00
-`.trim().replace(/\n/g, " ");
+// Re-export glowBoxShadow from glowAnimation for backward compatibility
+export { glowBoxShadow };
