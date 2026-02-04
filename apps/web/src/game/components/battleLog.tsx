@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { View, YStack } from "tamagui";
+import { FixedSizeList as List } from "react-window";
 import { UText } from "@/lib/components/core/text";
 import { type BattleLogEntry } from "../types";
 
@@ -16,24 +17,39 @@ const glassStyle = {
   backgroundColor: "rgba(26, 33, 48, 0.5)",
 };
 
-// Max height for scrollable entries container
-const MAX_ENTRIES_HEIGHT = 300;
+// Virtualized list config
+const LIST_HEIGHT = 300;
+const LIST_WIDTH = 148; // 180 - padding
+const ITEM_HEIGHT = 50; // Height of each entry row
 
 /**
  * Battle log panel - vertically centered on left side of screen.
  * Shows chronological record of actions with glass effect.
- * Entries are sorted by timestamp and scrollable.
+ * Uses react-window for virtualized rendering.
  * Color coding: YOU = secondary (orange), ENEMY = primary (blue)
  */
 export default function BattleLog({ entries }: BattleLogProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<List>(null);
 
   // Auto-scroll to bottom when new entries arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (listRef.current && entries.length > 0) {
+      listRef.current.scrollToItem(entries.length - 1, "end");
     }
   }, [entries.length]);
+
+  // Row renderer for virtualized list
+  const Row = useCallback(
+    ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const entry = entries[index];
+      return (
+        <div style={style}>
+          <BattleLogEntryRow entry={entry} />
+        </div>
+      );
+    },
+    [entries]
+  );
 
   return (
     <View
@@ -52,28 +68,22 @@ export default function BattleLog({ entries }: BattleLogProps) {
         {/* Divider */}
         <View height={1} backgroundColor="$neutral_700" width="100%" />
 
-        {/* Entries - scrollable container */}
-        <View
-          ref={scrollRef}
-          // @ts-expect-error - style prop for scrollable container
-          style={{
-            maxHeight: MAX_ENTRIES_HEIGHT,
-            overflowY: "auto",
-            overflowX: "hidden",
-          }}
-        >
-          {entries.length === 0 ? (
-            <UText variant="body-sm" color="$neutral_400">
-              No actions yet.
-            </UText>
-          ) : (
-            <YStack gap={8}>
-              {entries.map((entry) => (
-                <BattleLogEntryRow key={entry.id} entry={entry} />
-              ))}
-            </YStack>
-          )}
-        </View>
+        {/* Entries - virtualized list */}
+        {entries.length === 0 ? (
+          <UText variant="body-sm" color="$neutral_400">
+            No actions yet.
+          </UText>
+        ) : (
+          <List
+            ref={listRef}
+            height={Math.min(LIST_HEIGHT, entries.length * ITEM_HEIGHT)}
+            width={LIST_WIDTH}
+            itemCount={entries.length}
+            itemSize={ITEM_HEIGHT}
+          >
+            {Row}
+          </List>
+        )}
       </YStack>
     </View>
   );
