@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@server/_generated/api";
 import type { Id } from "convex/values";
@@ -363,65 +363,93 @@ export function useGameState({
   // Strategist threshold: show guidance when < 7 seconds remaining
   const STRATEGIST_THRESHOLD_MS = 7000;
 
-  // Calculate strategist guidance when timer is low and it's our turn
+  // Track if strategist is active (timer under threshold and our turn)
+  const isStrategistActive =
+    phase === "battle" &&
+    turn === "you" &&
+    !isFiring &&
+    timeRemainingMs > 0 &&
+    timeRemainingMs <= STRATEGIST_THRESHOLD_MS;
+
+  // Cached strategist recommendation - only recalculate when needed
+  const [cachedRecommendation, setCachedRecommendation] = useState<Coordinate | null>(null);
+  const lastEnemyCellsCountRef = useRef(0);
+  const wasStrategistActiveRef = useRef(false);
+
+  // Update cached recommendation when entering strategist mode or board changes
+  useEffect(() => {
+    const currentCellsCount = enemyCells.size;
+
+    // Recalculate if:
+    // 1. Just entered strategist mode (wasn't active, now is)
+    // 2. Board state changed (shot landed while in strategist mode)
+    const justEnteredStrategist = isStrategistActive && !wasStrategistActiveRef.current;
+    const boardChanged = currentCellsCount !== lastEnemyCellsCountRef.current;
+
+    if (isStrategistActive && (justEnteredStrategist || boardChanged)) {
+      setCachedRecommendation(getStrategistRecommendation(enemyCells));
+    }
+
+    // Clear cache when exiting strategist mode
+    if (!isStrategistActive && wasStrategistActiveRef.current) {
+      setCachedRecommendation(null);
+    }
+
+    wasStrategistActiveRef.current = isStrategistActive;
+    lastEnemyCellsCountRef.current = currentCellsCount;
+  }, [isStrategistActive, enemyCells]);
+
+  // Build guidance from cached recommendation
   const guidance: Guidance | null = useMemo(() => {
-    // Only show guidance during battle phase, on our turn, when timer is low
-    if (phase !== "battle" || turn !== "you" || isFiring) {
-      return null;
-    }
-
-    // Only activate when under threshold
-    if (timeRemainingMs > STRATEGIST_THRESHOLD_MS || timeRemainingMs <= 0) {
-      return null;
-    }
-
-    // Get recommendation from strategist algorithm
-    const recommendedCoord = getStrategistRecommendation(enemyCells);
-    if (!recommendedCoord) {
+    if (!isStrategistActive || !cachedRecommendation) {
       return null;
     }
 
     return {
       role: "STRATEGIST",
-      instruction: formatStrategistInstruction(recommendedCoord),
-      coordinate: recommendedCoord,
+      instruction: formatStrategistInstruction(cachedRecommendation),
+      coordinate: cachedRecommendation,
     };
-  }, [phase, turn, isFiring, timeRemainingMs, enemyCells]);
+  }, [isStrategistActive, cachedRecommendation]);
 
-  // Track if we've already auto-fired for this turn (prevent double-fire)
-  const [hasAutoFired, setHasAutoFired] = useState(false);
-
-  // Reset auto-fire flag when turn changes
-  useEffect(() => {
-    setHasAutoFired(false);
-  }, [game?.currentTurnDeviceId]);
+  // Track the turn we've auto-fired for (by turnStartedAt timestamp)
+  const lastAutoFiredTurnRef = useRef<number | null>(null);
 
   // Auto-fire when timer hits 0 and it's our turn
   useEffect(() => {
-    // Only auto-fire if:
-    // - Battle phase
-    // - Our turn
-    // - Not already firing
-    // - Haven't auto-fired this turn
-    // - Timer just hit 0
-    if (
-      phase !== "battle" ||
-      turn !== "you" ||
-      isFiring ||
-      hasAutoFired ||
-      timeRemainingMs > 0
-    ) {
+    // Skip if not in battle phase or not our turn
+    if (phase !== "battle" || turn !== "you") {
       return;
     }
 
-    // Get a target coordinate
-    const targetCoord = getStrategistRecommendation(enemyCells);
-    if (!targetCoord) {
+    // Skip if already firing
+    if (isFiring) {
+      return;
+    }
+
+    // Skip if timer hasn't expired yet
+    if (timeRemainingMs > 0) {
+      return;
+    }
+
+    // Skip if no valid turn timestamp (means turn hasn't started properly)
+    if (!game?.turnStartedAt) {
+      return;
+    }
+
+    // Skip if we already auto-fired for this turn (check by turnStartedAt)
+    if (lastAutoFiredTurnRef.current === game.turnStartedAt) {
+      return;
+    }
+
+    // Use cached recommendation or calculate new one
+    const targetCoord = cachedRecommendation ?? getStrategistRecommendation(enemyCells);
+    if (!targetCoord || !deviceId) {
       return;
     }
 
     console.log("Auto-firing at:", targetCoord);
-    setHasAutoFired(true);
+    lastAutoFiredTurnRef.current = game.turnStartedAt;
 
     // Fire at the recommended coordinate
     const { col, row } = parseCoordinate(targetCoord);
@@ -430,7 +458,7 @@ export function useGameState({
 
     fireShotMutation({
       gameId: typedGameId,
-      deviceId: deviceId!,
+      deviceId,
       coord: { x, y },
     }).catch((error) => {
       console.error("Auto-fire failed:", error);
@@ -439,8 +467,9 @@ export function useGameState({
     phase,
     turn,
     isFiring,
-    hasAutoFired,
     timeRemainingMs,
+    game?.turnStartedAt,
+    cachedRecommendation,
     enemyCells,
     fireShotMutation,
     typedGameId,
