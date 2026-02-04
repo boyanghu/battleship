@@ -99,8 +99,8 @@ Stack + entry points:
 Routes:
 
 - `/` (home): create a game
-- `/lobby/[gameId]`: invite link, ready state, countdown
-- `/game/[gameId]`: battle HUD and event log
+- `/game/[gameId]`: unified game screen with phase-based UI (lobby, countdown, placement, battle, finished)
+- `/lobby/[gameId]`: legacy redirect to `/game/[gameId]`
 
 Client identity:
 
@@ -110,14 +110,13 @@ Client identity:
 
 ## 4) Data Flow
 
-1. Home page calls `createGame({ deviceId, mode })` and routes to `/lobby/[gameId]`.
-2. Lobby page calls `joinGame`, toggles readiness via `setReady`.
-3. When both ready, server transitions to countdown.
-4. Client calls `advanceFromCountdown` when countdown expires, routes to `/game/[gameId]`.
-5. Players call `commitPlacement` with their ship positions.
-6. When both placed, server transitions to battle with random first turn.
-7. Players take turns calling `fireShot`, server resolves and advances turn.
-8. Game ends when all ships sunk or player forfeits.
+1. Home page calls `createGame({ deviceId, mode })` and routes to `/game/[gameId]`.
+2. GameScreen fetches game state and renders the appropriate phase component.
+3. **Lobby phase**: Shows invite link, player status, ready button. Calls `joinGame`, `setReady`.
+4. **Countdown phase**: Shows 5-4-3-2-1 countdown. Calls `advanceFromCountdown` when timer expires.
+5. **Placement phase**: Players position ships. Calls `commitPlacement` with ship positions.
+6. **Battle phase**: Players take turns firing. Calls `fireShot`, server resolves and advances turn.
+7. **Finished phase**: Shows victory/defeat. Option to return home.
 
 ---
 

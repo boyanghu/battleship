@@ -61,16 +61,16 @@ Priorities: `P0` (critical) to `P4` (low), use `-p 0` through `-p 4`
 
 Every TODO that warrants tracking should become a Beads issue with appropriate type, priority, and dependencies.
 
-## Lucide Icons - Named Imports
+## Phosphor Icons
 
-When using Lucide icons, use named imports from the main package:
+This project uses Phosphor icons (`@phosphor-icons/react`). Use named imports:
 
 ```typescript
-// CORRECT: Named imports (tree-shakeable with proper TypeScript support)
-import { ArrowRight, Camera, Home } from "lucide-react";
+import { Crosshair, Robot, Check, House } from "@phosphor-icons/react";
 
-// AVOID: Wildcard imports (pulls in ALL icons)
-import * as Icons from "lucide-react";
+// Usage with weight prop
+<Crosshair size={20} weight="regular" />
+<Check size={20} weight="bold" />
 ```
 
 ## AFTER EVERY COMMIT - ALWAYS PUSH
