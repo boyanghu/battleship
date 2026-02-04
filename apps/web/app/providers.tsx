@@ -3,7 +3,7 @@
 import type { PropsWithChildren } from "react";
 import { useMemo } from "react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { TamaguiProvider, Theme } from "tamagui";
+import { TamaguiProvider, Theme, View } from "tamagui";
 
 import config from "@/tamagui.config";
 import { AnalyticsProvider } from "@/lib/analytics";
@@ -16,7 +16,11 @@ export default function Providers({ children }: PropsWithChildren) {
     <ConvexProvider client={client}>
       <AnalyticsProvider>
         <TamaguiProvider config={config} defaultTheme="dark">
-          <Theme name="dark">{children}</Theme>
+          <Theme name="dark">
+            <View flex={1} minHeight="100vh" backgroundColor="$bg">
+              {children}
+            </View>
+          </Theme>
         </TamaguiProvider>
       </AnalyticsProvider>
     </ConvexProvider>

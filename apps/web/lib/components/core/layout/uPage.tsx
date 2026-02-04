@@ -32,20 +32,11 @@ const UPage = ({
   disableBottomMargin = false,
   ...props
 }: UPageProps) => {
-  // Web-simplified margins (no safe area insets needed)
-  const shadowPadding = 12; // Extra space for shadows
-  const marginTop = disableTopMargin ? 4 : 4;
-  const marginBottom = disableBottomMargin ? 4 : 4 + shadowPadding;
-  const marginHorizontal = 16;
 
   return (
     <View
       flex={1}
-      marginTop={marginTop}
-      marginBottom={marginBottom}
-      marginLeft={marginHorizontal}
-      marginRight={marginHorizontal}
-      bg="$transparent"
+      margin="$6"
       overflow="visible"
       {...props}
     >

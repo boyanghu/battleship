@@ -5,6 +5,7 @@ import { Button, styled, type TamaguiElement } from "tamagui";
 
 import { UText } from "../text";
 import type { LogEventBuilder } from "@/lib/analytics";
+import { useGlowAnimation, staticGlowStyle } from "@/lib/styles";
 
 type IconTextButtonVariant = "glow" | "secondary";
 
@@ -13,25 +14,10 @@ interface UIconTextButtonProps {
   icon?: ReactNode;
   variant?: IconTextButtonVariant;
   disabled?: boolean;
+  fullWidth?: boolean;
   onPress?: () => void;
   eventBuilder: LogEventBuilder;
 }
-
-// Glow shadow from Figma
-const glowBoxShadow = `
-  0px 2px 4px 0px #7fb2ff,
-  0px 4px 26px -4px #3b82f6,
-  0px -1px 4px 0px #ffd08a,
-  0px -2px 24px -4px #ff9b00
-`.trim().replace(/\n/g, " ");
-
-// Expanded glow for pulsate peak
-const glowBoxShadowExpanded = `
-  0px 2px 6px 2px #7fb2ff,
-  0px 6px 32px -2px #3b82f6,
-  0px -1px 6px 2px #ffd08a,
-  0px -3px 30px -2px #ff9b00
-`.trim().replace(/\n/g, " ");
 
 const StyledButton = styled(Button, {
   alignItems: "center",
@@ -45,21 +31,9 @@ const StyledButton = styled(Button, {
   gap: 12,
 });
 
-// CSS keyframes for pulsating glow
-const pulseGlowKeyframes = `
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: ${glowBoxShadow};
-  }
-  50% {
-    box-shadow: ${glowBoxShadowExpanded};
-  }
-}
-`;
-
 /**
  * Icon + Text button component from Figma design system.
- * Features pill shape and optional pulsating glow effect.
+ * Features pill shape and optional pulsating glow effect (1s duration).
  */
 const UIconTextButton = forwardRef<TamaguiElement, UIconTextButtonProps>(
   (props, ref) => {
@@ -68,14 +42,21 @@ const UIconTextButton = forwardRef<TamaguiElement, UIconTextButtonProps>(
       icon,
       variant = "glow",
       disabled = false,
+      fullWidth = false,
       onPress,
       eventBuilder,
     } = props;
 
     const isGlow = variant === "glow" && !disabled;
+    const { GlowStyles, glowStyle } = useGlowAnimation({
+      duration: 1000,
+      enabled: isGlow,
+    });
 
     // Variant-specific colors
     const backgroundColor = variant === "glow" ? "#e6eaf0" : "#2a3448";
+    const hoverBg = variant === "glow" ? "#d4dae3" : "#232c3a";
+    const pressBg = variant === "glow" ? "#c8ced8" : "#1e2633";
     const textColor = variant === "glow" ? "#141a23" : "#e6eaf0";
     const disabledBg = "#1a2130";
     const disabledText = "#8e9aaf";
@@ -85,38 +66,37 @@ const UIconTextButton = forwardRef<TamaguiElement, UIconTextButtonProps>(
       onPress?.();
     }, [eventBuilder, onPress]);
 
+    // Determine the glow style to apply
+    const buttonGlowStyle = isGlow
+      ? glowStyle
+      : variant === "glow" && disabled
+        ? staticGlowStyle
+        : undefined;
+
     return (
       <>
-        {/* Inject keyframes */}
-        {isGlow && (
-          <style dangerouslySetInnerHTML={{ __html: pulseGlowKeyframes }} />
-        )}
+        {isGlow && <GlowStyles />}
         <StyledButton
           ref={ref}
           onPress={disabled ? undefined : handlePress}
           disabled={disabled}
           backgroundColor={disabled ? disabledBg : backgroundColor}
+          width={fullWidth ? "100%" : undefined}
           pressStyle={
             disabled
               ? undefined
               : {
-                  opacity: 0.85,
+                  backgroundColor: pressBg,
                 }
           }
           hoverStyle={
             disabled
               ? undefined
               : {
-                  opacity: 0.9,
+                  backgroundColor: hoverBg,
                 }
           }
-          style={
-            isGlow
-              ? {
-                  animation: "pulse-glow 500ms ease-in-out infinite",
-                }
-              : undefined
-          }
+          style={buttonGlowStyle}
         >
           <UText
             variant="label-lg"
