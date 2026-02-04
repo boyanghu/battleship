@@ -39,6 +39,7 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [localCountdown, setLocalCountdown] = useState<number | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
   const advancedRef = useRef(false);
 
   // Initialize device ID
@@ -75,10 +76,11 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
       setCountdown(remaining);
       if (remaining === 0 && !advancedRef.current) {
         advancedRef.current = true;
+        setIsNavigating(true);
         if (deviceId) {
           advanceToPlacement({ gameId: typedGameId, deviceId });
         }
-        router.push(`/game/${gameId}`);
+        router.replace(`/game/${gameId}`);
       }
     };
 
@@ -91,7 +93,8 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
   useEffect(() => {
     if (!game) return;
     if (game.status === "placement" || game.status === "battle") {
-      router.push(`/game/${gameId}`);
+      setIsNavigating(true);
+      router.replace(`/game/${gameId}`);
     }
   }, [game, gameId, router]);
 
@@ -122,8 +125,9 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
     if (localCountdown === null) return;
 
     if (localCountdown === 0) {
-      // Navigate to game when countdown finishes
-      router.push(`/game/${gameId}`);
+      // Set navigating flag to prevent lobby flash, then navigate
+      setIsNavigating(true);
+      router.replace(`/game/${gameId}`);
       return;
     }
 
@@ -161,12 +165,13 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
   const activeCountdown = localCountdown ?? countdown;
 
   // Show countdown overlay (matching Figma design)
-  if (activeCountdown !== null && activeCountdown > 0) {
+  // Also show when navigating to prevent lobby flash
+  if ((activeCountdown !== null && activeCountdown > 0) || isNavigating) {
     return (
       <UPage>
         <YStack flex={1} justifyContent="center" alignItems="center" gap="$2">
           <UText variant="hxl" color="$neutral_200">
-            {activeCountdown}
+            {isNavigating ? "GO!" : activeCountdown}
           </UText>
           <UText variant="label-md" color="$neutral_400">
             BATTLE BEGINS
