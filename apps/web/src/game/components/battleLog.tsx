@@ -3,17 +3,16 @@
 import { useEffect, useRef, useMemo } from "react";
 import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
+import { glassEffectStyle } from "@/lib/styles";
 import { type BattleLogEntry } from "../types";
 
 interface BattleLogProps {
   entries: BattleLogEntry[];
 }
 
-// Base glass effect styles (from Figma)
+// Base glass effect with transition for background color changes
 const baseGlassStyle: React.CSSProperties = {
-  backdropFilter: "blur(6px)",
-  WebkitBackdropFilter: "blur(6px)",
-  backgroundColor: "rgba(26, 33, 48, 0.5)",
+  ...glassEffectStyle,
   transition: "background-color 300ms ease-out",
 };
 

@@ -12,6 +12,8 @@
     "start": "pnpm --filter web start",
     "lint": "pnpm --filter web lint",
     "type-check": "pnpm --filter web type-check",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "./script/clean",
     "devkill": "./script/devkill",
     "convex:dev": "convex dev",
@@ -22,10 +24,13 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "concurrently": "^8.2.2",
     "convex": "^1.31.6",
+    "convex-test": "^0.0.41",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7"
+    "lint-staged": "^16.2.7",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

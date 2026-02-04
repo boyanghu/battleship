@@ -19,7 +19,9 @@ interface Game {
 }
 
 /**
- * Generates a random delay between BOT_MIN_DELAY_MS and BOT_MAX_DELAY_MS
+ * Generates a random delay between BOT_MIN_DELAY_MS and BOT_MAX_DELAY_MS.
+ *
+ * Time Complexity: O(1)
  */
 function getRandomBotDelay(): number {
   return (
@@ -36,6 +38,8 @@ function getRandomBotDelay(): number {
  * - turnStartedAt is set
  * 
  * Call this after any turn change that might give control to the bot.
+ *
+ * Time Complexity: O(1) - simple condition checks and scheduler call
  */
 export async function scheduleBotMoveIfNeeded(
   ctx: MutationCtx,

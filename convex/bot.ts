@@ -11,18 +11,23 @@ import {
   TURN_DURATION_MS
 } from "./lib/constants";
 import {
+  advanceTurn,
   allShipsSunk,
   appendEvent,
   getOpponentDeviceId,
   now,
-  resolveShot,
-  type Shot
+  processShot
 } from "./games/helpers";
 import { getBotRecommendation } from "./games/bot/strategist";
 
 /**
  * Internal mutation called by the scheduler to execute the bot's move.
  * Validates game state before firing to handle edge cases.
+ *
+ * Time Complexity: O(n) where n = board size^2 (100 cells)
+ *   - getBotRecommendation: O(n * s) where s = shots fired
+ *   - processShot: O(s * c) where s = ships (5), c = cells per ship (5)
+ *   - Database operations: O(log n) for indexed queries
  */
 export const executeBotMove = internalMutation({
   args: {
@@ -80,21 +85,13 @@ export const executeBotMove = internalMutation({
       BOT_DEVICE_ID
     );
 
-    // Resolve the shot
-    const { result, sunkShipType } = resolveShot(playerBoard, targetCoord);
-
-    // Update player's board with the shot
-    const boards = { ...game.boards };
-    const newShot: Shot = {
-      coord: targetCoord,
-      result,
-      sunkShipType,
+    // Process the shot - resolve and update board
+    const { result, sunkShipType, updatedBoards } = processShot(
+      game.boards,
+      playerDeviceId,
+      targetCoord,
       timestamp
-    };
-    boards[playerDeviceId] = {
-      ...playerBoard,
-      shotsReceived: [...playerBoard.shotsReceived, newShot]
-    };
+    );
 
     // Log SHOT_RESOLVED event
     await appendEvent(
@@ -106,11 +103,11 @@ export const executeBotMove = internalMutation({
     );
 
     // Check for win condition
-    const updatedPlayerBoard = boards[playerDeviceId];
+    const updatedPlayerBoard = updatedBoards[playerDeviceId];
     if (allShipsSunk(updatedPlayerBoard)) {
       // Bot wins
       await ctx.db.patch(args.gameId, {
-        boards,
+        boards: updatedBoards,
         status: "finished",
         winnerDeviceId: BOT_DEVICE_ID,
         currentTurnDeviceId: undefined,
@@ -126,24 +123,20 @@ export const executeBotMove = internalMutation({
       return;
     }
 
-    // Advance turn to player
+    // Update boards first
     await ctx.db.patch(args.gameId, {
-      boards,
-      currentTurnDeviceId: playerDeviceId,
-      turnStartedAt: timestamp,
-      turnDurationMs: TURN_DURATION_MS,
+      boards: updatedBoards,
       updatedAt: timestamp
     });
 
-    await appendEvent(ctx, args.gameId, "TURN_ADVANCED", {
-      fromDeviceId: BOT_DEVICE_ID,
-      toDeviceId: playerDeviceId
-    });
-
-    await appendEvent(ctx, args.gameId, "TURN_STARTED", {
-      deviceId: playerDeviceId,
-      turnStartedAt: timestamp,
-      turnDurationMs: TURN_DURATION_MS
-    });
+    // Advance turn to player
+    await advanceTurn(
+      ctx,
+      args.gameId,
+      BOT_DEVICE_ID,
+      playerDeviceId,
+      TURN_DURATION_MS,
+      timestamp
+    );
   }
 });

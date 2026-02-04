@@ -12,30 +12,15 @@ import {
   type Guidance,
   type TurnOwner,
   type YourCellState,
-  parseCoordinate,
 } from "../types";
 import {
   getStrategistRecommendation,
   formatStrategistInstruction,
+  coordToString,
+  stringToCoord,
+  SHIP_NAMES,
+  SHIP_LENGTHS,
 } from "../utils";
-
-// Ship type names for display
-const SHIP_NAMES: Record<string, string> = {
-  carrier: "Carrier",
-  battleship: "Battleship",
-  cruiser: "Cruiser",
-  submarine: "Submarine",
-  destroyer: "Destroyer",
-};
-
-// Ship lengths for calculating if a ship is sunk
-const SHIP_LENGTHS: Record<string, number> = {
-  carrier: 5,
-  battleship: 4,
-  cruiser: 3,
-  submarine: 3,
-  destroyer: 2,
-};
 
 // Types matching the backend schema
 interface Coord {
@@ -107,14 +92,11 @@ interface UseGameStateResult {
   fireAt: (coordinate: Coordinate) => void;
 }
 
-// Helper to convert x,y coordinates to string coordinate (e.g., "A1")
-function coordToString(coord: Coord): Coordinate {
-  const col = String.fromCharCode(65 + coord.x); // 0 -> 'A', 1 -> 'B', etc.
-  const row = coord.y + 1; // 0-indexed to 1-indexed
-  return `${col}${row}`;
-}
-
-// Helper to get all cells occupied by a ship
+/**
+ * Get all cells occupied by a ship.
+ *
+ * Time Complexity: O(L) where L = ship length (max 5)
+ */
 function getShipCells(ship: Ship): Coord[] {
   const cells: Coord[] = [];
   for (let i = 0; i < ship.length; i++) {
@@ -127,7 +109,11 @@ function getShipCells(ship: Ship): Coord[] {
   return cells;
 }
 
-// Helper to determine cell position in ship
+/**
+ * Determine cell position in ship (left/right/top/bottom/body).
+ *
+ * Time Complexity: O(1)
+ */
 function getCellPosition(
   ship: Ship,
   cellIndex: number
@@ -146,7 +132,13 @@ function getCellPosition(
   }
 }
 
-// Helper to check if a ship is sunk based on shots received
+/**
+ * Check if a ship is sunk based on shots received.
+ *
+ * Time Complexity: O(H + L) where H = shots received, L = ship length
+ *   - Building hit set: O(H)
+ *   - Checking each ship cell: O(L)
+ */
 function isShipSunk(ship: Ship, shotsReceived: Shot[]): boolean {
   const shipCells = getShipCells(ship);
   const hitCoords = new Set(
@@ -681,9 +673,7 @@ export function useGameState({
         return;
       }
 
-      const { col, row } = parseCoordinate(coordinate);
-      const x = col.charCodeAt(0) - 65; // A=0, B=1, etc.
-      const y = row - 1; // 1-indexed to 0-indexed
+      const { x, y } = stringToCoord(coordinate);
 
       // Lock input until shot resolves
       setIsFiring(true);

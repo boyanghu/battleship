@@ -1,7 +1,7 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { COUNTDOWN_DURATION_MS } from "../../lib/constants";
-import { appendEvent, now } from "../helpers";
+import { appendEvent, assertPhase, now } from "../helpers";
 
 export const setReadyHandler = async (
   ctx: MutationCtx,
@@ -13,9 +13,7 @@ export const setReadyHandler = async (
   }
 
   // PHASE GUARD
-  if (game.status !== "lobby") {
-    throw new Error("Cannot set ready: game is not in lobby phase");
-  }
+  assertPhase(game.status, "lobby", "set ready");
 
   const timestamp = now();
   const players = game.players.map((player) =>

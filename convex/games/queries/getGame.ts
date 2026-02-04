@@ -2,6 +2,13 @@ import type { Id } from "../../_generated/dataModel";
 import type { QueryCtx } from "../../_generated/server";
 import type { Board, Coord } from "../helpers";
 
+/**
+ * Get game data with security filtering for the requesting player.
+ * 
+ * Time Complexity: O(P) where P = number of players (max 2) = O(1)
+ *   - Database get: O(1) by ID
+ *   - Board filtering: O(P) iterations
+ */
 export const getGameHandler = async (
   ctx: QueryCtx,
   args: { gameId: Id<"games">; deviceId: string }

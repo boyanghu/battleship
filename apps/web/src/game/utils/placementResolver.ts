@@ -9,6 +9,7 @@
  */
 
 import { BOARD_SIZE } from "../types";
+import { type Coord, cellKey } from "./coordinates";
 
 // =============================================================================
 // TYPES
@@ -30,11 +31,6 @@ export interface Ship {
   length: number;
 }
 
-export interface Coord {
-  x: number;
-  y: number;
-}
-
 // Cell key for occupancy map
 type CellKey = string; // "x,y" format
 
@@ -43,14 +39,9 @@ type CellKey = string; // "x,y" format
 // =============================================================================
 
 /**
- * Create a cell key from coordinates
- */
-function cellKey(x: number, y: number): CellKey {
-  return `${x},${y}`;
-}
-
-/**
- * Get all cells occupied by a ship
+ * Get all cells occupied by a ship.
+ *
+ * Time Complexity: O(L) where L = ship length (max 5)
  */
 export function getShipCells(ship: Ship): Coord[] {
   const cells: Coord[] = [];
@@ -65,7 +56,9 @@ export function getShipCells(ship: Ship): Coord[] {
 }
 
 /**
- * Check if a ship is fully within bounds (0 to BOARD_SIZE-1)
+ * Check if a ship is fully within bounds (0 to BOARD_SIZE-1).
+ *
+ * Time Complexity: O(L) where L = ship length
  */
 export function isInBounds(ship: Ship): boolean {
   const cells = getShipCells(ship);
@@ -75,8 +68,10 @@ export function isInBounds(ship: Ship): boolean {
 }
 
 /**
- * Clamp a ship to be within bounds
+ * Clamp a ship to be within bounds.
  * Shifts minimally to fit. Priority: right → left → down → up
+ *
+ * Time Complexity: O(1)
  */
 export function clampToBounds(ship: Ship): Ship {
   let { x, y } = ship.origin;
@@ -102,8 +97,11 @@ export function clampToBounds(ship: Ship): Ship {
 }
 
 /**
- * Build an occupancy map from ships
+ * Build an occupancy map from ships.
  * Returns a map of "x,y" -> shipType
+ *
+ * Time Complexity: O(S * L) where S = ships (5), L = max length (5)
+ *   Standard Battleship: O(17) = O(1) constant
  */
 export function buildOccupancyMap(
   ships: Ship[],
@@ -123,7 +121,9 @@ export function buildOccupancyMap(
 }
 
 /**
- * Check if a ship overlaps with any occupied cells
+ * Check if a ship overlaps with any occupied cells.
+ *
+ * Time Complexity: O(L) where L = ship length (Map lookup is O(1))
  */
 function hasOverlap(ship: Ship, occupancy: Map<CellKey, ShipType>): boolean {
   const cells = getShipCells(ship);
@@ -131,7 +131,10 @@ function hasOverlap(ship: Ship, occupancy: Map<CellKey, ShipType>): boolean {
 }
 
 /**
- * Find all ships that overlap with the given ship
+ * Find all ships that overlap with the given ship.
+ *
+ * Time Complexity: O(S * L) for buildOccupancyMap + O(L) for checking
+ *   = O(S * L) where S = ships (5), L = max length (5)
  */
 export function findOverlappingShips(ship: Ship, ships: Ship[]): ShipType[] {
   const occupancy = buildOccupancyMap(ships, ship.shipType);
@@ -149,7 +152,9 @@ export function findOverlappingShips(ship: Ship, ships: Ship[]): ShipType[] {
 }
 
 /**
- * Check if a position is valid for a ship (in bounds and no overlap)
+ * Check if a position is valid for a ship (in bounds and no overlap).
+ *
+ * Time Complexity: O(L) where L = ship length
  */
 function isValidPosition(
   ship: Ship,
@@ -173,8 +178,11 @@ function isValidPosition(
 }
 
 /**
- * Generate candidate positions ordered by Manhattan distance from origin
+ * Generate candidate positions ordered by Manhattan distance from origin.
  * Tie-breaking: smaller y, then smaller x
+ *
+ * Time Complexity: O(n * log n) where n = BOARD_SIZE^2 (100 cells)
+ *   Generation: O(n), Sorting: O(n log n)
  */
 function generateCandidatePositions(origin: Coord): Coord[] {
   const candidates: Array<{ coord: Coord; distance: number }> = [];
@@ -198,8 +206,11 @@ function generateCandidatePositions(origin: Coord): Coord[] {
 }
 
 /**
- * Find a valid position for a ship using BFS/spiral search
- * Preserves ship orientation
+ * Find a valid position for a ship using BFS/spiral search.
+ * Preserves ship orientation.
+ *
+ * Time Complexity: O(n * log n + n * L) = O(n * log n)
+ *   where n = BOARD_SIZE^2 (100), L = ship length (5)
  */
 export function findValidPosition(
   ship: Ship,
@@ -217,7 +228,9 @@ export function findValidPosition(
 }
 
 /**
- * Mark cells as occupied in the map
+ * Mark cells as occupied in the map.
+ *
+ * Time Complexity: O(L) where L = ship length
  */
 function markOccupied(
   occupancy: Map<CellKey, ShipType>,
@@ -234,7 +247,7 @@ function markOccupied(
 // =============================================================================
 
 /**
- * Resolve placement after an action (drag drop or rotate)
+ * Resolve placement after an action (drag drop or rotate).
  *
  * Algorithm:
  * 1. Apply the active ship's new placement (already done in input)
@@ -243,6 +256,11 @@ function markOccupied(
  * 4. For each overlapping ship, find new valid position via BFS
  * 5. Update occupancy, cascade if needed
  * 6. Fallback to deterministic repack if stuck
+ *
+ * Time Complexity: O(S^2 * n * log n)
+ *   where S = ships (5), n = board cells (100)
+ *   Worst case: each ship causes cascade, each needs BFS search
+ *   Practical case: usually O(n * log n) for single ship relocation
  */
 export function resolvePlacement(
   ships: Ship[],
@@ -312,8 +330,12 @@ export function resolvePlacement(
 }
 
 /**
- * Deterministic fallback: repack all ships if BFS fails
- * Keeps active ship fixed, places others in scan order
+ * Deterministic fallback: repack all ships if BFS fails.
+ * Keeps active ship fixed, places others in scan order.
+ *
+ * Time Complexity: O(S * n * L)
+ *   where S = ships (5), n = board cells (100), L = max ship length (5)
+ *   Linear scan through all positions for each ship
  */
 function deterministicRepack(
   ships: Ship[],
@@ -365,8 +387,10 @@ function deterministicRepack(
 // =============================================================================
 
 /**
- * Rotate a ship and apply collision resolution
+ * Rotate a ship and apply collision resolution.
  * Anchor point is the origin (left for horizontal, top for vertical)
+ *
+ * Time Complexity: O(S^2 * n * log n) due to resolvePlacement
  */
 export function rotateAndResolve(
   ships: Ship[],
@@ -401,8 +425,10 @@ export function rotateAndResolve(
 // =============================================================================
 
 /**
- * Move a ship to a new position and resolve collisions
- * Position is clamped to bounds before resolution
+ * Move a ship to a new position and resolve collisions.
+ * Position is clamped to bounds before resolution.
+ *
+ * Time Complexity: O(S^2 * n * log n) due to resolvePlacement
  */
 export function moveAndResolve(
   ships: Ship[],
@@ -429,8 +455,10 @@ export function moveAndResolve(
 }
 
 /**
- * Calculate clamped position during drag (for preview)
- * Does not resolve collisions, just shows where ship would land
+ * Calculate clamped position during drag (for preview).
+ * Does not resolve collisions, just shows where ship would land.
+ *
+ * Time Complexity: O(1)
  */
 export function clampDragPosition(
   ship: Ship,

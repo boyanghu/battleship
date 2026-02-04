@@ -2,18 +2,28 @@ import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { TURN_DURATION_MS } from "../../lib/constants";
 import {
+  advanceTurn,
   allShipsSunk,
   appendEvent,
+  assertPhase,
   coordsEqual,
   getOpponentDeviceId,
   isInBounds,
   now,
-  resolveShot,
-  type Coord,
-  type Shot
+  processShot,
+  type Coord
 } from "../helpers";
 import { scheduleBotMoveIfNeeded } from "../bot";
 
+/**
+ * Fire a shot at the opponent's board.
+ *
+ * Time Complexity: O(S * L + H) where S = ships (5), L = max length (5), H = shots
+ *   - processShot: O(S * L) for hit detection
+ *   - allShipsSunk: O(S * L * H) for win check
+ *   - advanceTurn: O(1) for database updates
+ *   - In practice: O(1) constant for standard Battleship game sizes
+ */
 export const fireShotHandler = async (
   ctx: MutationCtx,
   args: { gameId: Id<"games">; deviceId: string; coord: Coord }
@@ -24,9 +34,7 @@ export const fireShotHandler = async (
   }
 
   // PHASE GUARD
-  if (game.status !== "battle") {
-    throw new Error("Cannot fire: game is not in battle phase");
-  }
+  assertPhase(game.status, "battle", "fire");
 
   // Validate it's this player's turn
   if (game.currentTurnDeviceId !== args.deviceId) {
@@ -68,21 +76,13 @@ export const fireShotHandler = async (
     args.deviceId
   );
 
-  // Resolve the shot
-  const { result, sunkShipType } = resolveShot(opponentBoard, args.coord);
-
-  // Update opponent's board with the shot
-  const boards = { ...game.boards };
-  const newShot: Shot = {
-    coord: args.coord,
-    result,
-    sunkShipType,
+  // Process the shot - resolve and update board
+  const { result, sunkShipType, updatedBoards } = processShot(
+    game.boards,
+    opponentDeviceId,
+    args.coord,
     timestamp
-  };
-  boards[opponentDeviceId] = {
-    ...opponentBoard,
-    shotsReceived: [...opponentBoard.shotsReceived, newShot]
-  };
+  );
 
   // Log SHOT_RESOLVED event
   await appendEvent(
@@ -94,11 +94,11 @@ export const fireShotHandler = async (
   );
 
   // Check for win condition
-  const updatedOpponentBoard = boards[opponentDeviceId];
+  const updatedOpponentBoard = updatedBoards[opponentDeviceId];
   if (allShipsSunk(updatedOpponentBoard)) {
     // Game over - current player wins
     await ctx.db.patch(args.gameId, {
-      boards,
+      boards: updatedBoards,
       status: "finished",
       winnerDeviceId: args.deviceId,
       currentTurnDeviceId: undefined,
@@ -115,26 +115,21 @@ export const fireShotHandler = async (
     return { result, sunkShipType, gameOver: true, winner: args.deviceId };
   }
 
-  // Advance turn to opponent - also clear hover state since turn changed
+  // Update boards first
   await ctx.db.patch(args.gameId, {
-    boards,
-    currentTurnDeviceId: opponentDeviceId,
-    turnStartedAt: timestamp,
-    turnDurationMs: TURN_DURATION_MS,
-    updatedAt: timestamp,
-    hoverState: undefined // Clear hover when turn changes
+    boards: updatedBoards,
+    updatedAt: timestamp
   });
 
-  await appendEvent(ctx, args.gameId, "TURN_ADVANCED", {
-    fromDeviceId: args.deviceId,
-    toDeviceId: opponentDeviceId
-  });
-
-  await appendEvent(ctx, args.gameId, "TURN_STARTED", {
-    deviceId: opponentDeviceId,
-    turnStartedAt: timestamp,
-    turnDurationMs: TURN_DURATION_MS
-  });
+  // Advance turn to opponent
+  await advanceTurn(
+    ctx,
+    args.gameId,
+    args.deviceId,
+    opponentDeviceId,
+    TURN_DURATION_MS,
+    timestamp
+  );
 
   // Schedule bot move if it's the bot's turn (PvE mode)
   await scheduleBotMoveIfNeeded(ctx, args.gameId, {

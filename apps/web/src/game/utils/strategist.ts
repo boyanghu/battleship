@@ -4,9 +4,13 @@
  * Algorithm:
  * 1. Priority: Adjacent to hits (not sunk) - likely to find more of the same ship
  * 2. Fallback: Checkerboard pattern on unfired cells - statistically optimal coverage
+ *
+ * Time Complexity:
+ * - getStrategistRecommendation: O(n) where n = number of cells (100 for 10x10 board)
  */
 
-import { type Coordinate, type EnemyCellState, BOARD_SIZE, COLUMNS } from "../types";
+import { type Coordinate, type EnemyCellState, BOARD_SIZE } from "../types";
+import { stringToCoord, xyToString, isInBounds } from "./coordinates";
 
 // Adjacent directions (up, down, left, right)
 const DIRECTIONS = [
@@ -17,39 +21,13 @@ const DIRECTIONS = [
 ];
 
 /**
- * Parse coordinate string to x, y (0-indexed)
- */
-function parseCoord(coord: Coordinate): { x: number; y: number } {
-  const col = coord.charAt(0);
-  const row = parseInt(coord.slice(1), 10);
-  return {
-    x: col.charCodeAt(0) - 65, // A=0, B=1, etc.
-    y: row - 1, // 1-indexed to 0-indexed
-  };
-}
-
-/**
- * Convert x, y (0-indexed) to coordinate string
- */
-function toCoord(x: number, y: number): Coordinate {
-  return `${COLUMNS[x]}${y + 1}`;
-}
-
-/**
- * Check if x, y is within board bounds
- */
-function isInBounds(x: number, y: number): boolean {
-  return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
-}
-
-/**
  * Get unfired adjacent cells to a coordinate
  */
 function getUnfiredAdjacent(
   coord: Coordinate,
   enemyCells: Map<Coordinate, EnemyCellState>
 ): Coordinate[] {
-  const { x, y } = parseCoord(coord);
+  const { x, y } = stringToCoord(coord);
   const adjacent: Coordinate[] = [];
 
   for (const { dx, dy } of DIRECTIONS) {
@@ -57,7 +35,7 @@ function getUnfiredAdjacent(
     const ny = y + dy;
 
     if (isInBounds(nx, ny)) {
-      const neighborCoord = toCoord(nx, ny);
+      const neighborCoord = xyToString(nx, ny);
       const state = enemyCells.get(neighborCoord);
 
       // Only add if unfired (no state or neutral)
@@ -91,6 +69,7 @@ function findActiveHits(
 
 /**
  * Get all unfired cells on the board.
+ * O(n) where n = BOARD_SIZE^2 (100 cells)
  */
 function getAllUnfiredCells(
   enemyCells: Map<Coordinate, EnemyCellState>
@@ -99,7 +78,7 @@ function getAllUnfiredCells(
 
   for (let y = 0; y < BOARD_SIZE; y++) {
     for (let x = 0; x < BOARD_SIZE; x++) {
-      const coord = toCoord(x, y);
+      const coord = xyToString(x, y);
       const state = enemyCells.get(coord);
 
       if (!state || state === "neutral") {
@@ -114,13 +93,14 @@ function getAllUnfiredCells(
 /**
  * Filter cells to checkerboard pattern for optimal coverage.
  * Checkerboard means (x + y) % 2 === 0 or 1.
+ * O(n) where n = cells.length
  */
 function filterCheckerboard(
   cells: Coordinate[],
   parity: 0 | 1
 ): Coordinate[] {
   return cells.filter((coord) => {
-    const { x, y } = parseCoord(coord);
+    const { x, y } = stringToCoord(coord);
     return (x + y) % 2 === parity;
   });
 }

@@ -2,27 +2,13 @@
 
 import { View, XStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
-
-// Ship types in order (largest to smallest)
-const SHIPS = [
-  { type: "carrier", abbrev: "Ca", name: "Carrier", length: 5 },
-  { type: "battleship", abbrev: "Ba", name: "Battleship", length: 4 },
-  { type: "cruiser", abbrev: "Cr", name: "Cruiser", length: 3 },
-  { type: "submarine", abbrev: "Su", name: "Submarine", length: 3 },
-  { type: "destroyer", abbrev: "De", name: "Destroyer", length: 2 },
-] as const;
+import { glassEffectStyle } from "@/lib/styles";
+import { SHIPS } from "../utils";
 
 interface ShipScoreboardProps {
   enemySunkShips: string[]; // Ship types sunk by player
   playerSunkShips: string[]; // Ship types sunk by enemy
 }
-
-// Glass effect styles (from Figma)
-const glassStyle: React.CSSProperties = {
-  backdropFilter: "blur(6px)",
-  WebkitBackdropFilter: "blur(6px)",
-  backgroundColor: "rgba(26, 33, 48, 0.5)",
-};
 
 /**
  * Horizontal ship scoreboard showing fleet status for both players.
@@ -44,7 +30,7 @@ export default function ShipScoreboard({
       paddingVertical="$2"
       borderRadius={10}
       alignSelf="center"
-      style={glassStyle}
+      style={glassEffectStyle}
     >
       <XStack gap="$4" alignItems="center" justifyContent="center">
         {/* Enemy Fleet */}

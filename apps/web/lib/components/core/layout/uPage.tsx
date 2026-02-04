@@ -37,7 +37,12 @@ const UPage = ({
     <View
       flex={1}
       margin="$6"
-      overflow="visible"
+      overflow="hidden"
+      style={{
+        overflow: "hidden",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+      } as React.CSSProperties}
       {...props}
     >
       {children}

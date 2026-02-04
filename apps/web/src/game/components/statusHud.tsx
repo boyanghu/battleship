@@ -2,6 +2,7 @@
 
 import { View, XStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
+import { glassEffectStyle } from "@/lib/styles";
 import { type GamePhase, type TurnOwner } from "../types";
 
 interface StatusHudProps {
@@ -11,13 +12,6 @@ interface StatusHudProps {
   enemyShipsRemaining: number;
   playerShipsRemaining: number;
 }
-
-// Glass effect styles (from Figma)
-const glassStyle: React.CSSProperties = {
-  backdropFilter: "blur(6px)",
-  WebkitBackdropFilter: "blur(6px)",
-  backgroundColor: "rgba(26, 33, 48, 0.5)",
-};
 
 /**
  * Top status bar with glass effect.
@@ -81,7 +75,7 @@ export default function StatusHud({
         paddingHorizontal="$6"
         paddingVertical="$3"
         borderRadius={14}
-        style={glassStyle}
+        style={glassEffectStyle}
       >
         <XStack gap="$2" alignItems="center">
           <UText variant="label-sm" color="$primary_500">
@@ -99,7 +93,7 @@ export default function StatusHud({
         paddingVertical="$2"
         borderRadius={14}
         width={480}
-        style={glassStyle}
+        style={glassEffectStyle}
       >
         <XStack justifyContent="space-between" alignItems="center">
           {/* Phase */}
@@ -136,7 +130,7 @@ export default function StatusHud({
         paddingVertical="$3"
         borderRadius={14}
         width={100}
-        style={glassStyle}
+        style={glassEffectStyle}
       >
         <XStack gap="$2" alignItems="center" justifyContent="center">
           <UText variant="label-sm" color="$secondary_500">

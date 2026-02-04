@@ -1,6 +1,6 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { appendEvent, getOpponentDeviceId, now } from "../helpers";
+import { appendEvent, assertPhase, getOpponentDeviceId, now } from "../helpers";
 
 export const forfeitGameHandler = async (
   ctx: MutationCtx,
@@ -11,14 +11,8 @@ export const forfeitGameHandler = async (
     throw new Error("Game not found");
   }
 
-  // PHASE GUARD
-  if (
-    game.status !== "lobby" &&
-    game.status !== "placement" &&
-    game.status !== "battle"
-  ) {
-    throw new Error("Cannot forfeit: game is not in a forfeitable phase");
-  }
+  // PHASE GUARD - can forfeit in lobby, placement, or battle phases
+  assertPhase(game.status, ["lobby", "placement", "battle"], "forfeit");
 
   // Verify player is in game
   const player = game.players.find((p) => p.deviceId === args.deviceId);

@@ -14,6 +14,7 @@ import {
 import { type EffectInstance } from "../effects";
 import { useGameState, useThrottledHover } from "../../hooks";
 import { type Coordinate } from "../../types";
+import { stringToCoord } from "../../utils";
 import type { Id } from "@server/_generated/dataModel";
 
 interface BattlePhaseProps {
@@ -112,10 +113,7 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   const handleCellHover = useCallback(
     (coordinate: Coordinate | null) => {
       if (coordinate) {
-        // Parse coordinate (e.g., "A1") to {x, y}
-        const col = coordinate.charCodeAt(0) - 65; // A=0, B=1, etc.
-        const row = parseInt(coordinate.slice(1), 10) - 1; // 1-indexed to 0-indexed
-        updateHover({ x: col, y: row });
+        updateHover(stringToCoord(coordinate));
       } else {
         clearHover();
       }
@@ -165,7 +163,7 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   const isDisabled = isFiring || isFinished;
 
   return (
-    <View flex={1} backgroundColor="$bg" position="relative">
+    <View flex={1} backgroundColor="$bg" position="relative" overflow="hidden">
       {/* Status HUD - Top */}
       <View position="absolute" top={31} left={0} right={0} zIndex={10}>
         <StatusHud

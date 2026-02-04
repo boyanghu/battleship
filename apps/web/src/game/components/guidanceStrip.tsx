@@ -2,7 +2,7 @@
 
 import { View, XStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
-import { useGlowAnimation } from "@/lib/styles";
+import { useGlowAnimation, glassEffectStyle } from "@/lib/styles";
 import { type Guidance } from "../types";
 import { type LogEventBuilder } from "@/lib/analytics/providers/analyticsProvider";
 
@@ -12,11 +12,9 @@ interface GuidanceStripProps {
   eventBuilder: LogEventBuilder;
 }
 
-// Glass effect styles (from Figma) with slide-up animation
+// Glass effect styles with slide-up animation
 const glassStyle: React.CSSProperties = {
-  backdropFilter: "blur(6px)",
-  WebkitBackdropFilter: "blur(6px)",
-  backgroundColor: "rgba(26, 33, 48, 0.5)",
+  ...glassEffectStyle,
   animation: "slideUp 200ms ease-out",
 };
 

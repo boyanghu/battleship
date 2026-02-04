@@ -12,6 +12,14 @@ import {
 
 type Mode = "pvp" | "pve";
 
+/**
+ * Create a new game (PvP or PvE).
+ *
+ * Time Complexity: O(S * A * L) where S = ships (5), A = placement attempts, L = ship length
+ *   - generateRandomPlacement: O(S * A * L) - called once for host, twice for PvE
+ *   - Database insert: O(1)
+ *   - Event logging: O(log n) for sequence number lookup
+ */
 export const createGameHandler = async (
   ctx: MutationCtx,
   args: { deviceId: string; mode: Mode }

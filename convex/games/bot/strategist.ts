@@ -4,10 +4,13 @@
  * Algorithm:
  * 1. Priority: Adjacent to hits (not sunk) - likely to find more of the same ship
  * 2. Fallback: Checkerboard pattern on unfired cells - statistically optimal coverage
+ *
+ * Overall Time Complexity: O(n) where n = BOARD_SIZE^2 (100 cells)
  */
 
 import { BOARD_SIZE } from "../../lib/constants";
 import type { Coord, Shot } from "../helpers";
+import { isInBounds, coordsEqual } from "../helpers";
 
 // Adjacent directions (up, down, left, right)
 const DIRECTIONS = [
@@ -18,33 +21,16 @@ const DIRECTIONS = [
 ];
 
 /**
- * Check if coordinate is within board bounds
- */
-function isInBounds(coord: Coord): boolean {
-  return (
-    coord.x >= 0 &&
-    coord.x < BOARD_SIZE &&
-    coord.y >= 0 &&
-    coord.y < BOARD_SIZE
-  );
-}
-
-/**
- * Check if two coordinates are equal
- */
-function coordsEqual(a: Coord, b: Coord): boolean {
-  return a.x === b.x && a.y === b.y;
-}
-
-/**
- * Check if a coordinate has been fired at
+ * Check if a coordinate has been fired at.
+ * Time Complexity: O(s) where s = number of shots
  */
 function isFiredAt(coord: Coord, shotsReceived: Shot[]): boolean {
   return shotsReceived.some((shot) => coordsEqual(shot.coord, coord));
 }
 
 /**
- * Get unfired adjacent cells to a coordinate
+ * Get unfired adjacent cells to a coordinate.
+ * Time Complexity: O(4 * s) = O(s) where s = shots received
  */
 function getUnfiredAdjacent(coord: Coord, shotsReceived: Shot[]): Coord[] {
   const adjacent: Coord[] = [];
@@ -63,6 +49,8 @@ function getUnfiredAdjacent(coord: Coord, shotsReceived: Shot[]): Coord[] {
 /**
  * Find all "hit" cells that are NOT part of a sunk ship.
  * These are active targets we should finish sinking.
+ *
+ * Time Complexity: O(s) where s = shots received
  */
 function findActiveHits(shotsReceived: Shot[]): Coord[] {
   // Get all sunk coordinates to exclude
@@ -80,6 +68,9 @@ function findActiveHits(shotsReceived: Shot[]): Coord[] {
 
 /**
  * Get all unfired cells on the board.
+ *
+ * Time Complexity: O(n * s) where n = board size^2 (100), s = shots
+ *   Could be optimized to O(n) with Set, but board is small
  */
 function getAllUnfiredCells(shotsReceived: Shot[]): Coord[] {
   const unfired: Coord[] = [];
@@ -99,6 +90,8 @@ function getAllUnfiredCells(shotsReceived: Shot[]): Coord[] {
 /**
  * Filter cells to checkerboard pattern for optimal coverage.
  * Checkerboard means (x + y) % 2 === 0 or 1.
+ *
+ * Time Complexity: O(c) where c = number of cells to filter
  */
 function filterCheckerboard(cells: Coord[], parity: 0 | 1): Coord[] {
   return cells.filter((coord) => (coord.x + coord.y) % 2 === parity);
@@ -106,6 +99,8 @@ function filterCheckerboard(cells: Coord[], parity: 0 | 1): Coord[] {
 
 /**
  * Pick a random element from an array.
+ *
+ * Time Complexity: O(1)
  */
 function pickRandom<T>(arr: T[]): T | null {
   if (arr.length === 0) return null;
@@ -114,6 +109,8 @@ function pickRandom<T>(arr: T[]): T | null {
 
 /**
  * Strategist AI: Computes the optimal next target for the bot.
+ *
+ * Time Complexity: O(n * s) where n = board size^2 (100), s = shots
  *
  * Strategy:
  * 1. If there are active hits (ships partially damaged), target adjacent cells

@@ -1,7 +1,7 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { TURN_DURATION_MS } from "../../lib/constants";
-import { appendEvent, getOpponentDeviceId, now } from "../helpers";
+import { advanceTurn, appendEvent, assertPhase, getOpponentDeviceId, now } from "../helpers";
 import { scheduleBotMoveIfNeeded } from "../bot";
 
 export const advanceTurnIfExpiredHandler = async (
@@ -14,9 +14,7 @@ export const advanceTurnIfExpiredHandler = async (
   }
 
   // PHASE GUARD
-  if (game.status !== "battle") {
-    throw new Error("Cannot advance turn: game is not in battle phase");
-  }
+  assertPhase(game.status, "battle", "advance turn");
 
   // Check if turn has expired
   const turnEnd = (game.turnStartedAt ?? 0) + (game.turnDurationMs ?? 0);
@@ -42,25 +40,15 @@ export const advanceTurnIfExpiredHandler = async (
     reason: "timeout"
   });
 
-  // Advance turn to opponent - also clear hover state since turn changed
-  await ctx.db.patch(args.gameId, {
-    currentTurnDeviceId: opponentDeviceId,
-    turnStartedAt: timestamp,
-    turnDurationMs: TURN_DURATION_MS,
-    updatedAt: timestamp,
-    hoverState: undefined // Clear hover when turn changes
-  });
-
-  await appendEvent(ctx, args.gameId, "TURN_ADVANCED", {
-    fromDeviceId: currentDeviceId,
-    toDeviceId: opponentDeviceId
-  });
-
-  await appendEvent(ctx, args.gameId, "TURN_STARTED", {
-    deviceId: opponentDeviceId,
-    turnStartedAt: timestamp,
-    turnDurationMs: TURN_DURATION_MS
-  });
+  // Advance turn to opponent
+  await advanceTurn(
+    ctx,
+    args.gameId,
+    currentDeviceId,
+    opponentDeviceId,
+    TURN_DURATION_MS,
+    timestamp
+  );
 
   // Schedule bot move if it's the bot's turn (PvE mode)
   await scheduleBotMoveIfNeeded(ctx, args.gameId, {

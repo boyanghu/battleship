@@ -13,6 +13,7 @@ import {
   type YourCellState,
   BOARD_SIZE,
 } from "../types";
+import { xyToString } from "../utils";
 
 interface BoardProps {
   side: BoardSide;
@@ -87,11 +88,8 @@ export default function Board({
     [side, onCellPress, disabled]
   );
 
-  // Generate coordinate from row/col indices
-  const toCoord = (row: number, col: number): Coordinate => {
-    const colLetter = String.fromCharCode(65 + col); // A-J
-    return `${colLetter}${row + 1}`;
-  };
+  // Generate coordinate from row/col indices (row=y, col=x)
+  const toCoord = (row: number, col: number): Coordinate => xyToString(col, row);
 
   // Render all cells in CSS grid
   const renderCells = () => {

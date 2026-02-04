@@ -1,6 +1,6 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { appendEvent, now, generateRandomPlacement } from "../helpers";
+import { appendEvent, assertPhase, now, generateRandomPlacement } from "../helpers";
 
 export const joinGameHandler = async (
   ctx: MutationCtx,
@@ -12,9 +12,7 @@ export const joinGameHandler = async (
   }
 
   // PHASE GUARD
-  if (game.status !== "lobby") {
-    throw new Error("Cannot join game: game is not in lobby phase");
-  }
+  assertPhase(game.status, "lobby", "join game");
 
   const timestamp = now();
   const players = [...game.players];

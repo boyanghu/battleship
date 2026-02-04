@@ -23,6 +23,8 @@ import {
   type ShipType,
   rotateAndResolve,
   getShipCells,
+  coordToString,
+  xyToString,
 } from "../../utils";
 import { usePlacementDrag } from "../../hooks";
 
@@ -220,7 +222,7 @@ export default function PlacementPhase({
       for (let i = 0; i < length; i++) {
         const x = orientation === "horizontal" ? origin.x + i : origin.x;
         const y = orientation === "vertical" ? origin.y + i : origin.y;
-        const coord: Coordinate = `${String.fromCharCode(65 + x)}${y + 1}`;
+        const coord: Coordinate = xyToString(x, y);
 
         // Determine cell state based on position
         let state: YourCellState;
@@ -262,7 +264,7 @@ export default function PlacementPhase({
       for (let i = 0; i < length; i++) {
         const x = orientation === "horizontal" ? origin.x + i : origin.x;
         const y = orientation === "vertical" ? origin.y + i : origin.y;
-        const coord: Coordinate = `${String.fromCharCode(65 + x)}${y + 1}`;
+        const coord: Coordinate = xyToString(x, y);
         map.set(coord, shipType);
       }
     }
@@ -280,18 +282,11 @@ export default function PlacementPhase({
     const previewShip = { ...ship, origin: dragPreviewOrigin };
     const cells = getShipCells(previewShip);
 
-    return new Set(
-      cells.map(
-        (c) => `${String.fromCharCode(65 + c.x)}${c.y + 1}` as Coordinate
-      )
-    );
+    return new Set(cells.map((c) => coordToString(c)));
   }, [draggingShipType, dragPreviewOrigin, ships]);
 
-  // Generate coordinate from row/col indices
-  const toCoord = (row: number, col: number): Coordinate => {
-    const colLetter = String.fromCharCode(65 + col);
-    return `${colLetter}${row + 1}`;
-  };
+  // Generate coordinate from row/col indices (note: row=y, col=x)
+  const toCoord = (row: number, col: number): Coordinate => xyToString(col, row);
 
   // Handle drag start on a ship cell
   const handleDragStart = useCallback(

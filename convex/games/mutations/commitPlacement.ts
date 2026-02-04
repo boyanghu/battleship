@@ -1,9 +1,18 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { TURN_DURATION_MS } from "../../lib/constants";
-import { appendEvent, now, validatePlacement, type Ship } from "../helpers";
+import { appendEvent, assertPhase, now, validatePlacement, type Ship } from "../helpers";
 import { scheduleBotMoveIfNeeded } from "../bot";
 
+/**
+ * Commit ship placement for a player.
+ *
+ * Time Complexity: O(S^2 * L^2) where S = ships (5), L = max length (5)
+ *   - validatePlacement: O(S^2 * L^2) for overlap detection
+ *   - Player updates: O(P) where P = players (2)
+ *   - Database operations: O(1)
+ *   - In practice: O(625) = O(1) constant for standard Battleship
+ */
 export const commitPlacementHandler = async (
   ctx: MutationCtx,
   args: { gameId: Id<"games">; deviceId: string; ships: Ship[] }
@@ -14,11 +23,7 @@ export const commitPlacementHandler = async (
   }
 
   // PHASE GUARD
-  if (game.status !== "placement") {
-    throw new Error(
-      "Cannot commit placement: game is not in placement phase"
-    );
-  }
+  assertPhase(game.status, "placement", "commit placement");
 
   // Verify player is in game
   const playerIndex = game.players.findIndex((p) => p.deviceId === args.deviceId);

@@ -1,8 +1,9 @@
 "use client";
 
 import { View } from "tamagui";
-import { useGlowAnimation, staticGlowStyle } from "@/lib/styles";
+import { useGlowAnimation } from "@/lib/styles";
 import { type EnemyCellState } from "../types";
+import CellMarker from "./cellMarker";
 
 interface EnemyCellProps {
   state?: EnemyCellState;
@@ -39,14 +40,9 @@ export default function EnemyCell({
     return "$neutral_800";
   };
 
-  // Whether to show hit/sunk marker
-  const showHitMarker = state === "hit" || state === "sunk";
-
-  // Marker color - dark dot on red background for sunk, red dot for hit
-  const getMarkerColor = () => (state === "sunk" ? "$neutral_800" : "$destructive_500");
-
-  // Whether to show miss marker (white hollow circle)
-  const showMissMarker = state === "miss";
+  // Determine which marker to show (if any)
+  const markerType =
+    state === "sunk" ? "sunk" : state === "hit" ? "hit" : state === "miss" ? "miss" : null;
 
   return (
     <>
@@ -71,27 +67,8 @@ export default function EnemyCell({
           ...(isGlow ? glowStyle : {}),
         } as React.CSSProperties}
       >
-        {/* Hit/Sunk marker - red dot for hit, dark dot for sunk */}
-        {showHitMarker && (
-          <View
-            width={8}
-            height={8}
-            borderRadius="$round"
-            backgroundColor={getMarkerColor()}
-          />
-        )}
-
-        {/* Miss marker - white hollow circle */}
-        {showMissMarker && (
-          <View
-            width={8}
-            height={8}
-            borderRadius="$round"
-            borderWidth={2}
-            borderColor="$neutral_400"
-            backgroundColor="transparent"
-          />
-        )}
+        {/* Marker for hit, sunk, or miss states */}
+        {markerType && <CellMarker type={markerType} />}
       </View>
     </>
   );

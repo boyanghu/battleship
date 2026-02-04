@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import CellPlumeEffect, { type PlumeVariant } from "./CellPlumeEffect";
 import type { Coordinate } from "../../types";
+import { stringToCoord } from "../../utils";
 
 // Board layout constants (must match board.tsx)
 const CELL_SIZE = 32;
@@ -22,15 +23,6 @@ export interface EffectInstance {
 interface EffectsOverlayProps {
   effects: EffectInstance[];
   onEffectComplete: (id: string) => void;
-}
-
-/**
- * Parse coordinate string (e.g., "A1") to row/col indices.
- */
-function parseCoord(coord: Coordinate): { row: number; col: number } {
-  const col = coord.charCodeAt(0) - 65; // A=0, B=1, etc.
-  const row = parseInt(coord.slice(1), 10) - 1; // 1-indexed to 0-indexed
-  return { row, col };
 }
 
 /**
@@ -79,7 +71,7 @@ export default function EffectsOverlay({
       }}
     >
       {effects.map((effect) => {
-        const { row, col } = parseCoord(effect.coord);
+        const { x: col, y: row } = stringToCoord(effect.coord);
         const { x, y } = getCellCenterPx(row, col);
 
         return (

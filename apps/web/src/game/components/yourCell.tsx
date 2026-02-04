@@ -3,6 +3,7 @@
 import { View } from "tamagui";
 import { ArrowsClockwise } from "@phosphor-icons/react";
 import { type YourCellState } from "../types";
+import CellMarker from "./cellMarker";
 
 interface YourCellProps {
   state?: YourCellState;
@@ -122,11 +123,9 @@ export default function YourCell({
     }
   };
 
-  // Whether to show hit marker
-  const showHitMarker = isHit || isSunk;
-
-  // Marker color - dark dot on red background for sunk, red dot for hit
-  const getMarkerColor = () => (isSunk ? "$neutral_800" : "$destructive_500");
+  // Determine which marker to show (if any)
+  const markerType =
+    isSunk ? "sunk" : isHit ? "hit" : isMiss ? "miss" : null;
 
   // Background - sunk has red fill, others have neutral_800
   const backgroundColor = isSunk ? "$destructive_500" : "$neutral_800";
@@ -159,27 +158,8 @@ export default function YourCell({
       } as React.CSSProperties}
       {...borderRadiusStyles}
     >
-      {/* Hit marker - red dot for hit, dark dot for sunk */}
-      {showHitMarker && (
-        <View
-          width={8}
-          height={8}
-          borderRadius="$round"
-          backgroundColor={getMarkerColor()}
-        />
-      )}
-
-      {/* Miss marker - white hollow circle (enemy shot that missed) */}
-      {isMiss && (
-        <View
-          width={8}
-          height={8}
-          borderRadius="$round"
-          borderWidth={2}
-          borderColor="$neutral_400"
-          backgroundColor="transparent"
-        />
-      )}
+      {/* Marker for hit, sunk, or miss states */}
+      {markerType && <CellMarker type={markerType} />}
 
       {/* Neutral cell (no ship) - just dark background */}
       {!isShip && !isMiss && (
