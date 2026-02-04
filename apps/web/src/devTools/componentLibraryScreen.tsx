@@ -8,8 +8,9 @@ import ColorsScreen from "./colorsScreen";
 import UTextScreen from "./uTextScreen";
 import TextPreviewScreen from "./textPreviewScreen";
 import UTextButtonScreen from "./uTextButtonScreen";
+import UIconTextButtonScreen from "./uIconTextButtonScreen";
 
-type ScreenName = "home" | "colors" | "utext" | "textpreview" | "utextbutton";
+type ScreenName = "home" | "colors" | "utext" | "textpreview" | "utextbutton" | "uicontextbutton";
 
 interface ListItemProps {
   title: string;
@@ -66,6 +67,10 @@ const ComponentLibraryScreen = ({ onBack }: ComponentLibraryScreenProps) => {
 
   if (screen === "utextbutton") {
     return <UTextButtonScreen onBack={() => setScreen("home")} />;
+  }
+
+  if (screen === "uicontextbutton") {
+    return <UIconTextButtonScreen onBack={() => setScreen("home")} />;
   }
 
   return (
@@ -126,6 +131,11 @@ const ComponentLibraryScreen = ({ onBack }: ComponentLibraryScreenProps) => {
             title="UTextButton"
             subtitle="4 variants × 4 sizes - primary, glow, secondary, ghost"
             onPress={() => setScreen("utextbutton")}
+          />
+          <ListItem
+            title="UIconTextButton"
+            subtitle="Pill buttons with icons - glow (pulsating) and secondary"
+            onPress={() => setScreen("uicontextbutton")}
           />
         </YStack>
       </ScrollView>
