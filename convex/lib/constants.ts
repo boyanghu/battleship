@@ -5,7 +5,7 @@
 // Timing constants
 export const COUNTDOWN_DURATION_MS = 5000; // 5 seconds
 export const PLACEMENT_DURATION_MS = 30000; // 30 seconds
-export const TURN_DURATION_MS = 30000; // 30 seconds
+export const TURN_DURATION_MS = 15000; // 15 seconds
 
 // Board constants
 export const BOARD_SIZE = 10;
