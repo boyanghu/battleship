@@ -1,12 +1,17 @@
 "use client";
 
 import { View } from "tamagui";
+import { ArrowsClockwise } from "@phosphor-icons/react";
 import { type YourCellState } from "../types";
 
 interface YourCellProps {
   state?: YourCellState;
   onHoverIn?: () => void;
   onHoverOut?: () => void;
+  onRotate?: () => void;
+  onDragStart?: (e: React.MouseEvent) => void;
+  isDragging?: boolean;
+  isPreview?: boolean;
 }
 
 const CELL_SIZE = 32;
@@ -19,25 +24,36 @@ const RADIUS_SMALL = 4;
  * Your board cell - shows ships with rounded ends and hit markers.
  * Ship parts from Figma: left/right/top/bottom (rounded ends), body (all small radius)
  * Variants: safe (orange), hit (red + marker), sunk (red + marker, no fill)
+ * Rotate variants (-rotate suffix): show rotate button for placement phase
  */
 export default function YourCell({
   state = "neutral",
   onHoverIn,
   onHoverOut,
+  onRotate,
+  onDragStart,
+  isDragging = false,
+  isPreview = false,
 }: YourCellProps) {
+  // Check for rotate variant
+  const hasRotate = state.endsWith("-rotate");
+  const baseState = hasRotate
+    ? (state.replace("-rotate", "") as YourCellState)
+    : state;
+
   // Parse state into parts
-  const isShip = state !== "neutral";
-  const isSafe = state.startsWith("ship-safe");
-  const isHit = state.startsWith("ship-hit");
-  const isSunk = state.startsWith("ship-sunk");
+  const isShip = baseState !== "neutral";
+  const isSafe = baseState.startsWith("ship-safe");
+  const isHit = baseState.startsWith("ship-hit");
+  const isSunk = baseState.startsWith("ship-sunk");
 
   // Get position (left/right/top/bottom/body)
   const getPosition = () => {
-    if (state.endsWith("-left")) return "left";
-    if (state.endsWith("-right")) return "right";
-    if (state.endsWith("-top")) return "top";
-    if (state.endsWith("-bottom")) return "bottom";
-    if (state.endsWith("-body")) return "body";
+    if (baseState.endsWith("-left")) return "left";
+    if (baseState.endsWith("-right")) return "right";
+    if (baseState.endsWith("-top")) return "top";
+    if (baseState.endsWith("-bottom")) return "bottom";
+    if (baseState.endsWith("-body")) return "body";
     return null;
   };
 
@@ -108,6 +124,12 @@ export default function YourCell({
 
   const borderRadiusStyles = getBorderRadius();
 
+  // Cursor style for draggable ship cells
+  const cursorStyle = isShip && onDragStart ? "grab" : undefined;
+
+  // Opacity for dragging state
+  const opacity = isDragging ? 0.5 : isPreview ? 0.7 : 1;
+
   return (
     <View
       width={CELL_SIZE}
@@ -120,6 +142,10 @@ export default function YourCell({
       position="relative"
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
+      // @ts-expect-error - native mouse event
+      onMouseDown={isShip && onDragStart ? onDragStart : undefined}
+      cursor={cursorStyle}
+      opacity={opacity}
       {...borderRadiusStyles}
     >
       {/* Hit marker - red dot */}
@@ -143,6 +169,27 @@ export default function YourCell({
           backgroundColor="$neutral_800"
           borderRadius={RADIUS_SMALL}
         />
+      )}
+
+      {/* Rotate button for placement phase - centered, light background per Figma */}
+      {hasRotate && onRotate && (
+        <View
+          position="absolute"
+          top={8}
+          left={8}
+          right={8}
+          height={16}
+          borderRadius="$round"
+          backgroundColor="$neutral_200"
+          justifyContent="center"
+          alignItems="center"
+          cursor="pointer"
+          onPress={onRotate}
+          hoverStyle={{ backgroundColor: "$neutral_300" }}
+          pressStyle={{ backgroundColor: "$neutral_400" }}
+        >
+          <ArrowsClockwise size={12} weight="regular" color="#141a23" />
+        </View>
       )}
     </View>
   );

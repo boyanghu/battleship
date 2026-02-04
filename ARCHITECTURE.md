@@ -71,14 +71,36 @@ convex/
 
 | Mutation | Allowed Phase(s) | Purpose |
 |----------|------------------|---------|
-| `createGame` | n/a | Create game with mode, initialize empty boards |
-| `joinGame` | lobby | Add player, reject if full or wrong phase |
+| `createGame` | n/a | Create game with mode, generate random ships for host |
+| `joinGame` | lobby | Add player with random ships, reject if full or wrong phase |
 | `setReady` | lobby | Toggle ready, auto-start countdown if both ready |
 | `advanceFromCountdown` | countdown | Validate timer expired, move to placement |
 | `commitPlacement` | placement | Validate ships, start battle when both committed |
 | `fireShot` | battle | Validate turn, resolve hit/miss/sunk, advance turn |
 | `advanceTurnIfExpired` | battle | Skip turn if timeout |
 | `forfeitGame` | lobby/placement/battle | End game with forfeit |
+
+### Random Ship Placement
+
+Ships are generated randomly on the server when:
+- **Host creates game**: `createGame` generates random placement for the host
+- **Guest joins**: `joinGame` generates random placement for the joining player
+
+Each player gets a unique random layout. The `generateRandomPlacement()` helper ensures:
+- All 5 required ships are placed
+- Ships have random orientations (horizontal/vertical)
+- No ships overlap
+- All ships are within bounds
+
+### Security: Board Visibility
+
+**Critical**: Players must NEVER see opponent ship positions.
+
+The `getGame` query requires `deviceId` and filters boards:
+- **Requesting player's board**: Full board with ships and shotsReceived
+- **Opponent's board**: Only `shotsReceived` (for rendering hit/miss markers), ships array is empty
+
+This prevents cheating via API inspection.
 
 ### Key Logic
 

@@ -35,8 +35,11 @@ export default function GameScreen({ gameId }: GameScreenProps) {
     setDeviceId(getOrCreateDeviceId());
   }, []);
 
-  // Fetch game state
-  const game = useQuery(api.games.getGame, { gameId: typedGameId });
+  // Fetch game state (skip until deviceId is available)
+  const game = useQuery(
+    api.games.getGame,
+    deviceId ? { gameId: typedGameId, deviceId } : "skip"
+  );
   const joinGame = useMutation(api.games.joinGame);
 
   // Auto-join game when device ID is available

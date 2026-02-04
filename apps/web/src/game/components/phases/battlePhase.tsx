@@ -74,7 +74,7 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
         <StatusHud
           phase={state.phase}
           turn={state.turn}
-          timeRemaining={state.timeRemaining}
+          timeRemainingMs={state.timeRemainingMs}
           enemyShipsRemaining={state.enemyShipsRemaining}
           playerShipsRemaining={state.playerShipsRemaining}
         />

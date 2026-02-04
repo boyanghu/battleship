@@ -263,3 +263,72 @@ export function getOpponentDeviceId(
   const opponent = players.find((p) => p.deviceId !== currentDeviceId);
   return opponent?.deviceId ?? null;
 }
+
+/**
+ * Generate a random integer between min and max (inclusive)
+ */
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Generate a valid random ship placement for all required ships.
+ * Each call produces a unique random layout.
+ */
+export function generateRandomPlacement(): Ship[] {
+  const ships: Ship[] = [];
+  const occupiedCells: Set<string> = new Set();
+
+  for (const shipType of REQUIRED_SHIPS) {
+    const length = SHIP_LENGTHS[shipType];
+    let placed = false;
+    let attempts = 0;
+    const maxAttempts = 1000;
+
+    while (!placed && attempts < maxAttempts) {
+      attempts++;
+
+      // Random orientation
+      const orientation: Orientation =
+        Math.random() < 0.5 ? "horizontal" : "vertical";
+
+      // Calculate valid range based on orientation
+      const maxX =
+        orientation === "horizontal" ? BOARD_SIZE - length : BOARD_SIZE - 1;
+      const maxY =
+        orientation === "vertical" ? BOARD_SIZE - length : BOARD_SIZE - 1;
+
+      const origin: Coord = {
+        x: randomInt(0, maxX),
+        y: randomInt(0, maxY)
+      };
+
+      const ship: Ship = {
+        shipType: shipType as ShipType,
+        origin,
+        orientation,
+        length
+      };
+
+      // Get all cells this ship would occupy
+      const cells = getShipCells(ship);
+
+      // Check for overlap with already placed ships
+      const hasOverlap = cells.some((c) => occupiedCells.has(`${c.x},${c.y}`));
+
+      if (!hasOverlap) {
+        // Mark cells as occupied
+        cells.forEach((c) => occupiedCells.add(`${c.x},${c.y}`));
+        ships.push(ship);
+        placed = true;
+      }
+    }
+
+    if (!placed) {
+      // This should never happen with a 10x10 board and standard ships
+      throw new Error(`Failed to place ship: ${shipType}`);
+    }
+  }
+
+  return ships;
+}

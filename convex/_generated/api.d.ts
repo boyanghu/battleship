@@ -11,6 +11,7 @@
 import type * as games from "../games.js";
 import type * as games_helpers from "../games/helpers.js";
 import type * as games_mutations_advanceFromCountdown from "../games/mutations/advanceFromCountdown.js";
+import type * as games_mutations_advanceFromPlacement from "../games/mutations/advanceFromPlacement.js";
 import type * as games_mutations_advanceTurnIfExpired from "../games/mutations/advanceTurnIfExpired.js";
 import type * as games_mutations_commitPlacement from "../games/mutations/commitPlacement.js";
 import type * as games_mutations_createGame from "../games/mutations/createGame.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   games: typeof games;
   "games/helpers": typeof games_helpers;
   "games/mutations/advanceFromCountdown": typeof games_mutations_advanceFromCountdown;
+  "games/mutations/advanceFromPlacement": typeof games_mutations_advanceFromPlacement;
   "games/mutations/advanceTurnIfExpired": typeof games_mutations_advanceTurnIfExpired;
   "games/mutations/commitPlacement": typeof games_mutations_commitPlacement;
   "games/mutations/createGame": typeof games_mutations_createGame;

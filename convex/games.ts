@@ -10,6 +10,7 @@ export {
   joinGame,
   setReady,
   advanceFromCountdown,
+  advanceFromPlacement,
   commitPlacement,
   fireShot,
   advanceTurnIfExpired,

@@ -10,6 +10,7 @@ import { createGameHandler } from "../games/mutations/createGame";
 import { joinGameHandler } from "../games/mutations/joinGame";
 import { setReadyHandler } from "../games/mutations/setReady";
 import { advanceFromCountdownHandler } from "../games/mutations/advanceFromCountdown";
+import { advanceFromPlacementHandler } from "../games/mutations/advanceFromPlacement";
 import { commitPlacementHandler } from "../games/mutations/commitPlacement";
 import { fireShotHandler } from "../games/mutations/fireShot";
 import { advanceTurnIfExpiredHandler } from "../games/mutations/advanceTurnIfExpired";
@@ -93,6 +94,19 @@ export const advanceFromCountdown = mutation({
 });
 
 /**
+ * Advance from placement to battle phase
+ * Phase guard: placement only
+ * Validates placement timer has expired
+ * Auto-commits placements for players who haven't committed
+ */
+export const advanceFromPlacement = mutation({
+  args: {
+    gameId: v.id("games")
+  },
+  handler: advanceFromPlacementHandler
+});
+
+/**
  * Commit ship placement
  * Phase guard: placement only
  * Validates placement and starts battle when both players have committed
@@ -149,9 +163,13 @@ export const forfeitGame = mutation({
 
 /**
  * Get game document
+ * SECURITY: Only returns the requesting player's ships, never the opponent's
  */
 export const getGame = query({
-  args: { gameId: v.id("games") },
+  args: {
+    gameId: v.id("games"),
+    deviceId: v.string()
+  },
   handler: getGameHandler
 });
 

@@ -1,6 +1,6 @@
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { appendEvent, now } from "../helpers";
+import { appendEvent, now, generateRandomPlacement } from "../helpers";
 
 export const joinGameHandler = async (
   ctx: MutationCtx,
@@ -45,8 +45,9 @@ export const joinGameHandler = async (
       lastSeenAt: timestamp
     });
 
-    // Initialize board for new player
-    boards[args.deviceId] = { ships: [], shotsReceived: [] };
+    // Generate random ship placement for new player
+    const guestShips = generateRandomPlacement();
+    boards[args.deviceId] = { ships: guestShips, shotsReceived: [] };
 
     await appendEvent(
       ctx,

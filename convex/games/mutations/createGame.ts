@@ -1,5 +1,10 @@
 import type { MutationCtx } from "../../_generated/server";
-import { appendEvent, now, type Board } from "../helpers";
+import {
+  appendEvent,
+  now,
+  generateRandomPlacement,
+  type Board
+} from "../helpers";
 
 type Mode = "pvp" | "pve";
 
@@ -9,9 +14,12 @@ export const createGameHandler = async (
 ) => {
   const timestamp = now();
 
-  // Initialize empty boards for the host
+  // Generate random ship placement for host immediately
+  const hostShips = generateRandomPlacement();
+
+  // Initialize boards with random ships for host
   const boards: Record<string, Board> = {
-    [args.deviceId]: { ships: [], shotsReceived: [] }
+    [args.deviceId]: { ships: hostShips, shotsReceived: [] }
   };
 
   const gameId = await ctx.db.insert("games", {

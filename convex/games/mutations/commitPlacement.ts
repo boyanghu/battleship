@@ -20,9 +20,16 @@ export const commitPlacementHandler = async (
   }
 
   // Verify player is in game
-  const player = game.players.find((p) => p.deviceId === args.deviceId);
-  if (!player) {
+  const playerIndex = game.players.findIndex((p) => p.deviceId === args.deviceId);
+  if (playerIndex === -1) {
     throw new Error("Player not in game");
+  }
+
+  const player = game.players[playerIndex];
+
+  // IDEMPOTENT: If player already committed, return early
+  if (player.placementCommitted) {
+    return { ok: true, alreadyCommitted: true };
   }
 
   // Validate placement
@@ -40,6 +47,11 @@ export const commitPlacementHandler = async (
     ships: args.ships
   };
 
+  // Update players array to mark this player as committed
+  const updatedPlayers = game.players.map((p, idx) =>
+    idx === playerIndex ? { ...p, placementCommitted: true } : p
+  );
+
   await appendEvent(
     ctx,
     args.gameId,
@@ -48,20 +60,19 @@ export const commitPlacementHandler = async (
     args.deviceId
   );
 
-  // Check if both players have committed placements
-  const allPlacementsCommitted = game.players.every((p) => {
-    const playerBoard =
-      p.deviceId === args.deviceId ? boards[p.deviceId] : game.boards[p.deviceId];
-    return playerBoard && playerBoard.ships.length === 5;
-  });
+  // Check if both players have explicitly committed placements
+  const allPlacementsCommitted = updatedPlayers.every(
+    (p) => p.placementCommitted === true
+  );
 
   if (allPlacementsCommitted) {
     // RANDOMIZE first turn
     const firstPlayer =
-      game.players[Math.floor(Math.random() * game.players.length)];
+      updatedPlayers[Math.floor(Math.random() * updatedPlayers.length)];
 
     await ctx.db.patch(args.gameId, {
       boards,
+      players: updatedPlayers,
       status: "battle",
       currentTurnDeviceId: firstPlayer.deviceId,
       turnStartedAt: timestamp,
@@ -81,6 +92,7 @@ export const commitPlacementHandler = async (
   } else {
     await ctx.db.patch(args.gameId, {
       boards,
+      players: updatedPlayers,
       updatedAt: timestamp
     });
   }

@@ -16,6 +16,7 @@ export type EnemyCellState =
   | "sunk";
 
 // Your cell states - ship parts with rounded ends (from Figma)
+// Rotate variants (-rotate suffix) show a rotate button for placement phase
 export type YourCellState =
   | "neutral"
   | "ship-safe-left"
@@ -23,6 +24,8 @@ export type YourCellState =
   | "ship-safe-top"
   | "ship-safe-bottom"
   | "ship-safe-body"
+  | "ship-safe-left-rotate" // Horizontal ship head with rotate button
+  | "ship-safe-top-rotate" // Vertical ship head with rotate button
   | "ship-hit-left"
   | "ship-hit-right"
   | "ship-hit-top"

@@ -17,6 +17,7 @@ const mode = v.union(v.literal("pvp"), v.literal("pve"));
 const player = v.object({
   deviceId: v.string(),
   ready: v.boolean(),
+  placementCommitted: v.optional(v.boolean()), // Tracks explicit placement commit
   joinedAt: v.number(),
   lastSeenAt: v.number()
 });

@@ -7,7 +7,7 @@ import { type GamePhase, type TurnOwner } from "../types";
 interface StatusHudProps {
   phase: GamePhase;
   turn: TurnOwner;
-  timeRemaining: number;
+  timeRemainingMs: number;
   enemyShipsRemaining: number;
   playerShipsRemaining: number;
 }
@@ -21,28 +21,51 @@ const glassStyle = {
 
 /**
  * Top status bar with glass effect.
- * Layout from Figma: [ENEMY X] | PHASE | YOUR TURN | TIMER | [YOU X]
+ * Layout from Figma: [ENEMY X] | PHASE | CENTER TEXT | TIMER | [YOU X]
+ * Center text shows "POSITION YOUR FLEET" during placement, turn indicator otherwise.
  */
 export default function StatusHud({
   phase,
   turn,
-  timeRemaining,
+  timeRemainingMs,
   enemyShipsRemaining,
   playerShipsRemaining,
 }: StatusHudProps) {
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+  // Format time based on remaining time
+  // Above 5s: MM:SS format
+  // Below 5s: X.X format (deciseconds)
+  const formatTime = (ms: number) => {
+    if (ms <= 5000) {
+      // Below 5 seconds: show X.X format
+      return (ms / 1000).toFixed(1);
+    }
+    // Above 5 seconds: MM:SS format
+    const totalSeconds = Math.ceil(ms / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
+
+  // Timer color: red when below 5 seconds
+  const timerColor = timeRemainingMs <= 5000 ? "$destructive_500" : "$neutral_200";
 
   // Phase display text
   const phaseText = phase.toUpperCase();
 
-  // Turn display
-  const turnText = turn === "you" ? "YOUR TURN" : "ENEMY TURN";
-  const turnColor = turn === "you" ? "$secondary_500" : "$primary_500";
+  // Center text: phase-aware
+  const getCenterText = () => {
+    if (phase === "placement") {
+      return "POSITION YOUR FLEET";
+    }
+    return turn === "you" ? "YOUR TURN" : "ENEMY TURN";
+  };
+
+  const centerText = getCenterText();
+  const centerColor = phase === "placement"
+    ? "$secondary_500"
+    : turn === "you"
+      ? "$secondary_500"
+      : "$primary_500";
 
   return (
     <XStack justifyContent="center" alignItems="center" gap="$3">
@@ -81,15 +104,15 @@ export default function StatusHud({
             </UText>
           </View>
 
-          {/* Turn indicator */}
-          <UText variant="h2" color={turnColor}>
-            {turnText}
+          {/* Center text - phase-aware */}
+          <UText variant="h2" color={centerColor}>
+            {centerText}
           </UText>
 
-          {/* Timer */}
+          {/* Timer - red when below 5 seconds */}
           <View width={80}>
-            <UText variant="label-lg" color="$neutral_200" textAlign="right">
-              {formatTime(timeRemaining)}
+            <UText variant="label-lg" color={timerColor} textAlign="right">
+              {formatTime(timeRemainingMs)}
             </UText>
           </View>
         </XStack>

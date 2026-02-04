@@ -63,7 +63,7 @@ const DEMO_BATTLE_LOG: BattleLogEntry[] = [
 interface GameUIState {
   phase: GamePhase;
   turn: TurnOwner;
-  timeRemaining: number;
+  timeRemainingMs: number;
   enemyShipsRemaining: number;
   playerShipsRemaining: number;
   enemyCells: Map<Coordinate, EnemyCellState>;
@@ -93,17 +93,20 @@ export function useGameState({
 }: UseGameStateOptions): UseGameStateResult {
   const typedGameId = gameId as Id<"games">;
 
-  // Convex queries
-  const game = useQuery(api.games.getGame, { gameId: typedGameId });
+  // Convex queries (skip until deviceId is available)
+  const game = useQuery(
+    api.games.getGame,
+    deviceId ? { gameId: typedGameId, deviceId } : "skip"
+  );
 
-  // Timer state
-  const [timeRemaining, setTimeRemaining] = useState(572); // 09:32 demo
+  // Timer state (in milliseconds)
+  const [timeRemainingMs, setTimeRemainingMs] = useState(572000); // 09:32 demo
 
-  // Countdown timer effect
+  // Countdown timer effect - updates every 100ms for smooth display
   useEffect(() => {
     const interval = setInterval(() => {
-      setTimeRemaining((prev) => Math.max(0, prev - 1));
-    }, 1000);
+      setTimeRemainingMs((prev) => Math.max(0, prev - 100));
+    }, 100);
 
     return () => clearInterval(interval);
   }, []);
@@ -127,7 +130,7 @@ export function useGameState({
     return {
       phase,
       turn,
-      timeRemaining,
+      timeRemainingMs,
       enemyShipsRemaining: 2,
       playerShipsRemaining: 2,
       enemyCells: DEMO_ENEMY_CELLS,
@@ -139,7 +142,7 @@ export function useGameState({
         coordinate: "A7",
       },
     };
-  }, [phase, turn, timeRemaining]);
+  }, [phase, turn, timeRemainingMs]);
 
   // Fire at coordinate (mutation placeholder)
   const fireAt = useCallback((coordinate: Coordinate) => {

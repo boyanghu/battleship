@@ -1,0 +1,16 @@
+export {
+  type Ship,
+  type ShipType,
+  type Orientation,
+  type Coord,
+  getShipCells,
+  isInBounds,
+  clampToBounds,
+  buildOccupancyMap,
+  findOverlappingShips,
+  findValidPosition,
+  resolvePlacement,
+  rotateAndResolve,
+  moveAndResolve,
+  clampDragPosition,
+} from "./placementResolver";
