@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, YStack } from "tamagui";
-import { UPage } from "@/lib/components/core/layout";
 import { UText } from "@/lib/components/core/text";
 import useAnalytics from "@/lib/analytics/useAnalytics";
 import { getOrCreateDeviceId } from "@/lib/device";
@@ -22,6 +21,7 @@ interface GameScreenProps {
 /**
  * Main game screen - the command console experience.
  * HUD overlay pattern with battlefield as primary surface.
+ * Battle log is vertically centered on left side.
  */
 export default function GameScreen({ gameId }: GameScreenProps) {
   const { Event } = useAnalytics();
@@ -59,13 +59,11 @@ export default function GameScreen({ gameId }: GameScreenProps) {
   // Loading state
   if (isLoading || !state) {
     return (
-      <UPage>
-        <YStack flex={1} justifyContent="center" alignItems="center">
-          <UText variant="h2" color="$neutral_400">
-            Loading tactical systems...
-          </UText>
-        </YStack>
-      </UPage>
+      <View flex={1} backgroundColor="$bg" justifyContent="center" alignItems="center">
+        <UText variant="h2" color="$neutral_400">
+          Loading tactical systems...
+        </UText>
+      </View>
     );
   }
 
@@ -76,11 +74,10 @@ export default function GameScreen({ gameId }: GameScreenProps) {
       {/* Status HUD - Top */}
       <View
         position="absolute"
-        top={0}
+        top={31}
         left={0}
         right={0}
         zIndex={10}
-        paddingTop="$4"
       >
         <StatusHud
           phase={state.phase}
@@ -91,13 +88,14 @@ export default function GameScreen({ gameId }: GameScreenProps) {
         />
       </View>
 
-      {/* Battle Log - Left Side */}
+      {/* Battle Log - Left Side, Vertically Centered */}
       <View
         position="absolute"
-        left="$4"
-        top={80}
-        bottom={100}
+        left={31}
+        top="50%"
         zIndex={10}
+        // @ts-expect-error - transform for vertical centering
+        style={{ transform: "translateY(-50%)" }}
       >
         <BattleLog entries={state.battleLog} />
       </View>
@@ -107,13 +105,11 @@ export default function GameScreen({ gameId }: GameScreenProps) {
         flex={1}
         justifyContent="center"
         alignItems="center"
-        paddingTop={80}
-        paddingBottom={100}
       >
         <Battlefield
           turn={state.turn}
-          enemyBoard={state.enemyBoard}
-          playerBoard={state.playerBoard}
+          enemyCells={state.enemyCells}
+          yourCells={state.yourCells}
           recommendedCell={state.guidance?.coordinate}
           onFireAt={handleFireAt}
         />
@@ -123,7 +119,7 @@ export default function GameScreen({ gameId }: GameScreenProps) {
       {isPlayerTurn && state.guidance && (
         <View
           position="absolute"
-          bottom="$6"
+          bottom={31}
           left={0}
           right={0}
           zIndex={10}

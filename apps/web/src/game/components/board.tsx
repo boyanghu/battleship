@@ -1,139 +1,137 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { View, XStack, YStack } from "tamagui";
+import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
-import BoardCell from "./boardCell";
+import EnemyCell from "./enemyCell";
+import YourCell from "./yourCell";
 import {
   type BoardSide,
-  type BoardState,
   type Coordinate,
-  COLUMNS,
-  ROWS,
-  toCoordinate,
+  type EnemyCellState,
+  type YourCellState,
+  BOARD_SIZE,
 } from "../types";
 
 interface BoardProps {
   side: BoardSide;
-  state: BoardState;
   label: string;
   isActive?: boolean;
-  interactive?: boolean;
   recommendedCell?: Coordinate | null;
+  enemyCells?: Map<Coordinate, EnemyCellState>;
+  yourCells?: Map<Coordinate, YourCellState>;
   onCellPress?: (coordinate: Coordinate) => void;
 }
 
 const CELL_SIZE = 32;
-const CELL_GAP = 2;
+const CELL_GAP = 4;
 
 /**
- * 10x10 game board with row/column labels.
- * Renders cells based on state and handles interactions.
+ * 10x10 game board with CSS grid layout.
+ * No row/column labels - clean grid with title above and "B:10" below.
  */
 export default function Board({
   side,
-  state,
   label,
   isActive = false,
-  interactive = false,
   recommendedCell = null,
+  enemyCells,
+  yourCells,
   onCellPress,
 }: BoardProps) {
   const [hoveredCell, setHoveredCell] = useState<Coordinate | null>(null);
 
-  // Border color based on side and active state
-  const borderColor = isActive
-    ? side === "enemy"
-      ? "$primary_500"
-      : "$secondary_500"
-    : "$neutral_700";
+  // Border color based on side (from Figma design system)
+  // Enemy = primary (blue), Player = secondary (orange)
+  const borderColor = side === "enemy" ? "$primary_600" : "$secondary_500";
 
   // Label color based on side
   const labelColor = side === "enemy" ? "$primary_400" : "$secondary_400";
 
   const handleCellPress = useCallback(
     (coordinate: Coordinate) => {
-      if (interactive && onCellPress) {
+      if (side === "enemy" && onCellPress) {
         onCellPress(coordinate);
       }
     },
-    [interactive, onCellPress]
+    [side, onCellPress]
   );
 
-  const getCellState = (coordinate: Coordinate) => {
-    return state.cells.get(coordinate) ?? "empty";
+  // Generate coordinate from row/col indices
+  const toCoord = (row: number, col: number): Coordinate => {
+    const colLetter = String.fromCharCode(65 + col); // A-J
+    return `${colLetter}${row + 1}`;
+  };
+
+  // Render all cells in CSS grid
+  const renderCells = () => {
+    const cells = [];
+
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        const coordinate = toCoord(row, col);
+        const isRecommended = recommendedCell === coordinate;
+        const isHovered = hoveredCell === coordinate;
+
+        if (side === "enemy") {
+          // Enemy cell - get state from map
+          let cellState: EnemyCellState =
+            enemyCells?.get(coordinate) ?? "neutral";
+          if (isHovered && cellState === "neutral") {
+            cellState = "hover";
+          }
+
+          cells.push(
+            <EnemyCell
+              key={coordinate}
+              state={cellState}
+              isGlow={isRecommended}
+              onPress={() => handleCellPress(coordinate)}
+              onHoverIn={() => setHoveredCell(coordinate)}
+              onHoverOut={() => setHoveredCell(null)}
+            />
+          );
+        } else {
+          // Your cell - get state from map
+          const cellState: YourCellState =
+            yourCells?.get(coordinate) ?? "neutral";
+
+          cells.push(<YourCell key={coordinate} state={cellState} />);
+        }
+      }
+    }
+
+    return cells;
   };
 
   return (
     <YStack alignItems="center" gap="$2">
-      {/* Board label */}
+      {/* Board title label */}
       <UText variant="label-sm" color={labelColor}>
         {label}
       </UText>
 
       {/* Board container with border */}
       <View
-        borderWidth={2}
+        borderWidth={1}
         borderColor={borderColor}
-        borderRadius={8}
+        borderRadius={14}
         padding={8}
-        backgroundColor="$neutral_850"
+        // @ts-expect-error - CSS grid properties
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
+          gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
+          gap: `${CELL_GAP}px`,
+        }}
       >
-        {/* Column headers */}
-        <XStack gap={CELL_GAP} paddingLeft={CELL_SIZE + CELL_GAP}>
-          {COLUMNS.map((col) => (
-            <View
-              key={col}
-              width={CELL_SIZE}
-              height={16}
-              justifyContent="center"
-              alignItems="center"
-            >
-              <UText variant="label-sm" color="$neutral_400">
-                {col}
-              </UText>
-            </View>
-          ))}
-        </XStack>
-
-        {/* Grid rows */}
-        <YStack gap={CELL_GAP}>
-          {ROWS.map((row) => (
-            <XStack key={row} gap={CELL_GAP} alignItems="center">
-              {/* Row label */}
-              <View
-                width={CELL_SIZE}
-                height={CELL_SIZE}
-                justifyContent="center"
-                alignItems="flex-end"
-                paddingRight={4}
-              >
-                <UText variant="label-sm" color="$neutral_400">
-                  {row}
-                </UText>
-              </View>
-
-              {/* Cells */}
-              {COLUMNS.map((col) => {
-                const coordinate = toCoordinate(col, row);
-                return (
-                  <BoardCell
-                    key={coordinate}
-                    state={getCellState(coordinate)}
-                    side={side}
-                    isHovered={hoveredCell === coordinate}
-                    isRecommended={recommendedCell === coordinate}
-                    interactive={interactive}
-                    onPress={() => handleCellPress(coordinate)}
-                    onHoverIn={() => setHoveredCell(coordinate)}
-                    onHoverOut={() => setHoveredCell(null)}
-                  />
-                );
-              })}
-            </XStack>
-          ))}
-        </YStack>
+        {renderCells()}
       </View>
+
+      {/* Bottom label */}
+      <UText variant="label-sm" color="$neutral_400">
+        B:10
+      </UText>
     </YStack>
   );
 }

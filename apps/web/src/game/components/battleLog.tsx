@@ -1,6 +1,6 @@
 "use client";
 
-import { ScrollView, YStack } from "tamagui";
+import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { type BattleLogEntry } from "../types";
 
@@ -8,40 +8,47 @@ interface BattleLogProps {
   entries: BattleLogEntry[];
 }
 
+// Glass effect styles (from Figma)
+const glassStyle = {
+  backdropFilter: "blur(6px)",
+  WebkitBackdropFilter: "blur(6px)",
+  backgroundColor: "rgba(26, 33, 48, 0.5)",
+};
+
 /**
- * Battle log panel showing chronological record of actions.
- * Format: "YOU → A7" / "ENEMY → A7" with result below.
- * Color-coded by actor (YOU = secondary/orange, ENEMY = primary/blue).
+ * Battle log panel - vertically centered on left side of screen.
+ * Shows chronological record of actions with glass effect.
+ * Color coding: YOU = secondary (orange), ENEMY = primary (blue)
  */
 export default function BattleLog({ entries }: BattleLogProps) {
   return (
-    <YStack
-      width={160}
-      backgroundColor="$neutral_850"
-      borderRadius={8}
-      padding="$3"
-      gap="$3"
+    <View
+      borderRadius={14}
+      padding="$4"
+      // @ts-expect-error - style prop for glass effect
+      style={glassStyle}
     >
-      {/* Header */}
-      <UText variant="label-md" color="$neutral_400">
-        BATTLE LOG
-      </UText>
+      <YStack gap={10}>
+        {/* Header */}
+        <UText variant="label-md" color="$neutral_400" textAlign="right">
+          BATTLE LOG
+        </UText>
 
-      {/* Entries */}
-      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-        <YStack gap="$4">
-          {entries.length === 0 ? (
-            <UText variant="body-sm" color="$neutral_400">
-              No actions yet.
-            </UText>
-          ) : (
-            entries.map((entry) => (
-              <BattleLogEntryRow key={entry.id} entry={entry} />
-            ))
-          )}
-        </YStack>
-      </ScrollView>
-    </YStack>
+        {/* Divider */}
+        <View height={1} backgroundColor="$neutral_700" width="100%" />
+
+        {/* Entries */}
+        {entries.length === 0 ? (
+          <UText variant="body-sm" color="$neutral_400">
+            No actions yet.
+          </UText>
+        ) : (
+          entries.map((entry) => (
+            <BattleLogEntryRow key={entry.id} entry={entry} />
+          ))
+        )}
+      </YStack>
+    </View>
   );
 }
 
@@ -51,8 +58,9 @@ interface BattleLogEntryRowProps {
 
 function BattleLogEntryRow({ entry }: BattleLogEntryRowProps) {
   // Color based on actor (following design system conventions)
+  // YOU = secondary (orange), ENEMY = primary (blue)
   const actorColor =
-    entry.actor === "you" ? "$secondary_500" : "$primary_500";
+    entry.actor === "you" ? "$secondary_500" : "$primary_400";
   const actorText = entry.actor === "you" ? "YOU" : "ENEMY";
 
   // Result text
@@ -64,9 +72,9 @@ function BattleLogEntryRow({ entry }: BattleLogEntryRowProps) {
   };
 
   return (
-    <YStack gap="$1">
+    <YStack gap="$1" paddingVertical="$1">
       {/* Actor + Coordinate */}
-      <UText variant="label-sm" color={actorColor}>
+      <UText variant="label-md" color={actorColor}>
         {actorText} → {entry.coordinate}
       </UText>
 

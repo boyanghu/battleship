@@ -7,7 +7,34 @@
 // Cell coordinate (e.g., "A7", "J10")
 export type Coordinate = string;
 
-// Cell state on a board
+// Enemy cell states (from Figma)
+export type EnemyCellState =
+  | "neutral"
+  | "hover"
+  | "miss"
+  | "hit"
+  | "sunk";
+
+// Your cell states - ship parts with rounded ends (from Figma)
+export type YourCellState =
+  | "neutral"
+  | "ship-safe-left"
+  | "ship-safe-right"
+  | "ship-safe-top"
+  | "ship-safe-bottom"
+  | "ship-safe-body"
+  | "ship-hit-left"
+  | "ship-hit-right"
+  | "ship-hit-top"
+  | "ship-hit-bottom"
+  | "ship-hit-body"
+  | "ship-sunk-left"
+  | "ship-sunk-right"
+  | "ship-sunk-top"
+  | "ship-sunk-bottom"
+  | "ship-sunk-body";
+
+// Legacy cell state (for compatibility)
 export type CellState = "empty" | "miss" | "hit" | "ship" | "ship-hit";
 
 // Board side identifier

@@ -1,98 +1,45 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@server/_generated/api";
 import type { Id } from "convex/values";
 import {
-  type BoardState,
   type BattleLogEntry,
-  type CellState,
   type Coordinate,
+  type EnemyCellState,
   type GamePhase,
-  type GameUIState,
   type Guidance,
-  type Ship,
   type TurnOwner,
-  COLUMNS,
-  ROWS,
-  toCoordinate,
+  type YourCellState,
 } from "../types";
 
-// Demo ships for testing (will be replaced by backend data)
-const DEMO_PLAYER_SHIPS: Ship[] = [
-  {
-    id: "carrier",
-    name: "Carrier",
-    size: 5,
-    cells: ["G1", "G2", "G3", "G4", "G5"],
-    sunk: false,
-  },
-  {
-    id: "battleship",
-    name: "Battleship",
-    size: 4,
-    cells: ["C5", "D5", "E5", "F5"],
-    sunk: false,
-  },
-  {
-    id: "cruiser",
-    name: "Cruiser",
-    size: 3,
-    cells: ["I8", "I9", "I10"],
-    sunk: false,
-  },
-];
-
-// Demo hits/misses for testing
-const DEMO_ENEMY_BOARD_CELLS = new Map<Coordinate, CellState>([
-  ["B3", "miss"],
-  ["D5", "hit"],
-  ["D6", "hit"],
-  ["D7", "hit"],
-  ["E8", "miss"],
-  ["F4", "hit"],
+// Demo enemy board cells
+const DEMO_ENEMY_CELLS = new Map<Coordinate, EnemyCellState>([
+  ["C3", "miss"],
+  ["G7", "hit"],
+  ["I7", "hit"],
+  ["I8", "hit"],
+  ["B8", "sunk"],
+  ["C8", "sunk"],
+  ["D8", "sunk"],
 ]);
 
-const DEMO_PLAYER_BOARD_CELLS = new Map<Coordinate, CellState>([
-  ["G2", "ship-hit"],
-  ["G3", "ship-hit"],
-  ["H7", "miss"],
+// Demo player board cells with ship parts
+const DEMO_YOUR_CELLS = new Map<Coordinate, YourCellState>([
+  // Vertical ship (safe) - column H, rows 2-5
+  ["H2", "ship-safe-top"],
+  ["H3", "ship-hit-body"],
+  ["H4", "ship-hit-body"],
+  ["H5", "ship-hit-bottom"],
+  // Horizontal ship (safe) - row 5, columns B-D
+  ["B5", "ship-safe-left"],
+  ["C5", "ship-safe-body"],
+  ["D5", "ship-safe-right"],
+  // Horizontal ship (sunk) - row 9, columns E-F
+  ["E9", "ship-sunk-left"],
+  ["F9", "ship-sunk-right"],
 ]);
-
-// Create initial empty board state
-const createEmptyBoardState = (): BoardState => ({
-  cells: new Map(),
-  ships: [],
-});
-
-// Create demo board state for player
-const createDemoPlayerBoardState = (): BoardState => {
-  const cells = new Map<Coordinate, CellState>();
-
-  // Add ship cells
-  DEMO_PLAYER_SHIPS.forEach((ship) => {
-    ship.cells.forEach((cell) => {
-      cells.set(cell, "ship");
-    });
-  });
-
-  // Apply hits/misses
-  DEMO_PLAYER_BOARD_CELLS.forEach((state, coord) => {
-    cells.set(coord, state);
-  });
-
-  return {
-    cells,
-    ships: DEMO_PLAYER_SHIPS,
-  };
-};
-
-// Create demo board state for enemy
-const createDemoEnemyBoardState = (): BoardState => ({
-  cells: DEMO_ENEMY_BOARD_CELLS,
-  ships: [], // Enemy ships are hidden
-});
 
 // Demo battle log entries
 const DEMO_BATTLE_LOG: BattleLogEntry[] = [
@@ -111,6 +58,19 @@ const DEMO_BATTLE_LOG: BattleLogEntry[] = [
     timestamp: Date.now() - 30000,
   },
 ];
+
+// Full game UI state
+interface GameUIState {
+  phase: GamePhase;
+  turn: TurnOwner;
+  timeRemaining: number;
+  enemyShipsRemaining: number;
+  playerShipsRemaining: number;
+  enemyCells: Map<Coordinate, EnemyCellState>;
+  yourCells: Map<Coordinate, YourCellState>;
+  battleLog: BattleLogEntry[];
+  guidance: Guidance | null;
+}
 
 interface UseGameStateOptions {
   gameId: string;
@@ -135,10 +95,6 @@ export function useGameState({
 
   // Convex queries
   const game = useQuery(api.games.getGame, { gameId: typedGameId });
-  const events = useQuery(api.games.listGameEvents, {
-    gameId: typedGameId,
-    limit: 50,
-  });
 
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(572); // 09:32 demo
@@ -168,15 +124,14 @@ export function useGameState({
 
   // Build UI state from Convex data + demo data
   const state: GameUIState | null = useMemo(() => {
-    // Return demo state for now
     return {
       phase,
       turn,
       timeRemaining,
       enemyShipsRemaining: 2,
       playerShipsRemaining: 2,
-      enemyBoard: createDemoEnemyBoardState(),
-      playerBoard: createDemoPlayerBoardState(),
+      enemyCells: DEMO_ENEMY_CELLS,
+      yourCells: DEMO_YOUR_CELLS,
       battleLog: DEMO_BATTLE_LOG,
       guidance: {
         role: "STRATEGIST",

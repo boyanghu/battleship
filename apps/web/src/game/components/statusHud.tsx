@@ -12,9 +12,16 @@ interface StatusHudProps {
   playerShipsRemaining: number;
 }
 
+// Glass effect styles (from Figma)
+const glassStyle = {
+  backdropFilter: "blur(6px)",
+  WebkitBackdropFilter: "blur(6px)",
+  backgroundColor: "rgba(26, 33, 48, 0.5)",
+};
+
 /**
- * Top status bar showing game phase, turn, timer, and ships remaining.
- * Design: [ENEMY X] | PHASE | TURN | TIMER | [YOU X]
+ * Top status bar with glass effect.
+ * Layout from Figma: [ENEMY X] | PHASE | YOUR TURN | TIMER | [YOU X]
  */
 export default function StatusHud({
   phase,
@@ -38,59 +45,70 @@ export default function StatusHud({
   const turnColor = turn === "you" ? "$secondary_500" : "$primary_500";
 
   return (
-    <XStack
-      justifyContent="center"
-      alignItems="center"
-      gap="$4"
-      paddingVertical="$3"
-    >
+    <XStack justifyContent="center" alignItems="center" gap="$3">
       {/* Enemy ships badge */}
       <View
-        backgroundColor="$primary_600"
-        paddingHorizontal="$4"
-        paddingVertical="$2"
-        borderRadius="$round"
+        paddingHorizontal="$6"
+        paddingVertical="$3"
+        borderRadius={14}
+        // @ts-expect-error - style prop for glass effect
+        style={glassStyle}
       >
         <XStack gap="$2" alignItems="center">
-          <UText variant="label-md" color="$neutral_200">
+          <UText variant="label-sm" color="$primary_500">
             ENEMY
           </UText>
-          <UText variant="label-md" color="$neutral_200">
+          <UText variant="label-lg" color="$neutral_200">
             {enemyShipsRemaining}
           </UText>
         </XStack>
       </View>
 
-      {/* Center status group */}
-      <XStack alignItems="center" gap="$3">
-        {/* Phase */}
-        <UText variant="label-md" color="$neutral_400">
-          {phaseText}
-        </UText>
+      {/* Center status container */}
+      <View
+        paddingHorizontal="$6"
+        paddingVertical="$2"
+        borderRadius={14}
+        width={480}
+        // @ts-expect-error - style prop for glass effect
+        style={glassStyle}
+      >
+        <XStack justifyContent="space-between" alignItems="center">
+          {/* Phase */}
+          <View width={80}>
+            <UText variant="label-md" color="$neutral_400">
+              {phaseText}
+            </UText>
+          </View>
 
-        {/* Turn indicator */}
-        <UText variant="h3" color={turnColor}>
-          {turnText}
-        </UText>
+          {/* Turn indicator */}
+          <UText variant="h2" color={turnColor}>
+            {turnText}
+          </UText>
 
-        {/* Timer */}
-        <UText variant="label-md" color="$neutral_200">
-          {formatTime(timeRemaining)}
-        </UText>
-      </XStack>
+          {/* Timer */}
+          <View width={80}>
+            <UText variant="label-lg" color="$neutral_200" textAlign="right">
+              {formatTime(timeRemaining)}
+            </UText>
+          </View>
+        </XStack>
+      </View>
 
       {/* Player ships badge */}
       <View
-        backgroundColor="$secondary_600"
         paddingHorizontal="$4"
-        paddingVertical="$2"
-        borderRadius="$round"
+        paddingVertical="$3"
+        borderRadius={14}
+        width={100}
+        // @ts-expect-error - style prop for glass effect
+        style={glassStyle}
       >
-        <XStack gap="$2" alignItems="center">
-          <UText variant="label-md" color="$neutral_200">
-            YOU
+        <XStack gap="$2" alignItems="center" justifyContent="center">
+          <UText variant="label-sm" color="$secondary_500">
+            You
           </UText>
-          <UText variant="label-md" color="$neutral_200">
+          <UText variant="label-lg" color="$neutral_200">
             {playerShipsRemaining}
           </UText>
         </XStack>

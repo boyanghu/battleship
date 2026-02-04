@@ -2,12 +2,17 @@
 
 import { XStack } from "tamagui";
 import Board from "./board";
-import { type BoardState, type Coordinate, type TurnOwner } from "../types";
+import {
+  type Coordinate,
+  type EnemyCellState,
+  type TurnOwner,
+  type YourCellState,
+} from "../types";
 
 interface BattlefieldProps {
   turn: TurnOwner;
-  enemyBoard: BoardState;
-  playerBoard: BoardState;
+  enemyCells: Map<Coordinate, EnemyCellState>;
+  yourCells: Map<Coordinate, YourCellState>;
   recommendedCell?: Coordinate | null;
   onFireAt?: (coordinate: Coordinate) => void;
 }
@@ -19,8 +24,8 @@ interface BattlefieldProps {
  */
 export default function Battlefield({
   turn,
-  enemyBoard,
-  playerBoard,
+  enemyCells,
+  yourCells,
   recommendedCell = null,
   onFireAt,
 }: BattlefieldProps) {
@@ -31,21 +36,19 @@ export default function Battlefield({
       {/* Enemy Board (left) */}
       <Board
         side="enemy"
-        state={enemyBoard}
         label="ENEMY WATERS"
         isActive={isPlayerTurn}
-        interactive={isPlayerTurn}
         recommendedCell={isPlayerTurn ? recommendedCell : null}
+        enemyCells={enemyCells}
         onCellPress={onFireAt}
       />
 
       {/* Player Board (right) */}
       <Board
         side="player"
-        state={playerBoard}
         label="YOUR FLEET"
         isActive={!isPlayerTurn}
-        interactive={false}
+        yourCells={yourCells}
       />
     </XStack>
   );
