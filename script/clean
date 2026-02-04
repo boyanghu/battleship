@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Clean build artifacts and caches
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "Cleaning build artifacts..."
+
+# Remove build directories
+rm -rf apps/web/.next
+rm -rf apps/web/.tamagui
+rm -rf .tamagui
+rm -rf apps/web/.turbo
+rm -rf apps/web/.vercel
+
+# Clear caches
+rm -rf node_modules/.cache
+
+echo "Clean complete"

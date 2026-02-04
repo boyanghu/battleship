@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Start all development servers (Next.js + Convex)
+# Usage: ./script/dev
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Check for pnpm
+if ! command -v "pnpm" > /dev/null ; then
+  echo "Could not find command 'pnpm'."
+  echo "Install pnpm:"
+  echo "brew install pnpm@10"
+  exit 1
+fi
+
+./script/clean-watchman
+
+echo "Starting Battleship development servers..."
+
+echo ""
+
+pnpm concurrently \
+  --kill-others \
+  --raw \
+  "pnpm convex:dev" \
+  "pnpm --filter web dev"

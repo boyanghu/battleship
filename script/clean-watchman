@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Clean watchman state (helps with watcher issues)
+
+if command -v watchman > /dev/null 2>&1; then
+  watchman watch-del-all 2>/dev/null || true
+fi

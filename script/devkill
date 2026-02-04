@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Kill all development processes
+set -e
+
+echo "Killing development processes..."
+
+# Kill Next.js dev server
+pkill -f "next dev" 2>/dev/null || true
+
+# Kill Convex processes
+pkill -f "convex dev" 2>/dev/null || true
+
+# Kill any node processes on common dev ports
+lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+lsof -ti:3210 | xargs kill -9 2>/dev/null || true
+
+echo "Development processes killed"

@@ -1,0 +1,29 @@
+{
+  "name": "battleship",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.12.1",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "./script/dev",
+    "build": "pnpm --filter web build",
+    "start": "pnpm --filter web start",
+    "lint": "pnpm --filter web lint",
+    "clean": "./script/clean",
+    "devkill": "./script/devkill",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy",
+    "pnpm-dev": "pnpm dev",
+    "pnpm-install": "pnpm install",
+    "pnpm-clean": "pnpm clean"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "convex": "^1.31.6"
+  },
+  "dependencies": {
+    "@statsig/react-bindings": "^3.31.2"
+  }
+}
