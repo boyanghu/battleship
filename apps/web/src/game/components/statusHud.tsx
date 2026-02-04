@@ -13,7 +13,7 @@ interface StatusHudProps {
 }
 
 // Glass effect styles (from Figma)
-const glassStyle = {
+const glassStyle: React.CSSProperties = {
   backdropFilter: "blur(6px)",
   WebkitBackdropFilter: "blur(6px)",
   backgroundColor: "rgba(26, 33, 48, 0.5)",
@@ -81,7 +81,6 @@ export default function StatusHud({
         paddingHorizontal="$6"
         paddingVertical="$3"
         borderRadius={14}
-        // @ts-expect-error - style prop for glass effect
         style={glassStyle}
       >
         <XStack gap="$2" alignItems="center">
@@ -100,7 +99,6 @@ export default function StatusHud({
         paddingVertical="$2"
         borderRadius={14}
         width={480}
-        // @ts-expect-error - style prop for glass effect
         style={glassStyle}
       >
         <XStack justifyContent="space-between" alignItems="center">
@@ -138,7 +136,6 @@ export default function StatusHud({
         paddingVertical="$3"
         borderRadius={14}
         width={100}
-        // @ts-expect-error - style prop for glass effect
         style={glassStyle}
       >
         <XStack gap="$2" alignItems="center" justifyContent="center">

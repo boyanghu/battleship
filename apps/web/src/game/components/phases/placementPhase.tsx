@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, YStack } from "tamagui";
 import { useMutation } from "convex/react";
-import type { Id } from "convex/values";
+import type { Id } from "@server/_generated/dataModel";
 import { Check } from "@phosphor-icons/react";
 
 import { api } from "@server/_generated/api";
@@ -361,14 +361,13 @@ export default function PlacementPhase({
               borderColor="$secondary_500"
               borderRadius={14}
               padding={BOARD_PADDING}
-              // @ts-expect-error - CSS grid properties
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
                 gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
                 gap: `${CELL_GAP}px`,
                 userSelect: "none",
-              }}
+              } as React.CSSProperties}
             >
               {renderCells()}
             </View>

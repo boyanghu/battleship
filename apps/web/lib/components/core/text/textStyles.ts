@@ -13,12 +13,16 @@ export type TypographyStyle = Pick<
   | "textTransform"
 >;
 
+// CSS variable font family values - cast to satisfy Tamagui's types
+const FONT_SPACE_GROTESK = "var(--font-space-grotesk)" as TypographyStyle["fontFamily"];
+const FONT_SOURCE_SANS_3 = "var(--font-source-sans-3)" as TypographyStyle["fontFamily"];
+
 export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
   switch (variant) {
     // Headings - Space Grotesk
     case "hxl":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 40,
         lineHeight: 46,
         fontWeight: "600",
@@ -26,7 +30,7 @@ export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
       };
     case "h1":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 32,
         lineHeight: 38,
         fontWeight: "600",
@@ -34,21 +38,21 @@ export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
       };
     case "h2":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 24,
         lineHeight: 30,
         fontWeight: "500",
       };
     case "h3":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 20,
         lineHeight: 26,
         fontWeight: "500",
       };
     case "h4":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 18,
         lineHeight: 24,
         fontWeight: "500",
@@ -56,21 +60,21 @@ export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
     // Body - Source Sans 3
     case "body-lg":
       return {
-        fontFamily: "var(--font-source-sans-3)",
+        fontFamily: FONT_SOURCE_SANS_3,
         fontSize: 18,
         lineHeight: 28,
         fontWeight: "400",
       };
     case "body-md":
       return {
-        fontFamily: "var(--font-source-sans-3)",
+        fontFamily: FONT_SOURCE_SANS_3,
         fontSize: 15,
         lineHeight: 22,
         fontWeight: "400",
       };
     case "body-sm":
       return {
-        fontFamily: "var(--font-source-sans-3)",
+        fontFamily: FONT_SOURCE_SANS_3,
         fontSize: 12,
         lineHeight: 18,
         fontWeight: "400",
@@ -78,7 +82,7 @@ export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
     // Labels - Space Grotesk, ALL CAPS
     case "label-lg":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 15,
         lineHeight: 18,
         fontWeight: "500",
@@ -87,7 +91,7 @@ export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
       };
     case "label-md":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 13,
         lineHeight: 16,
         fontWeight: "500",
@@ -96,7 +100,7 @@ export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
       };
     case "label-sm":
       return {
-        fontFamily: "var(--font-space-grotesk)",
+        fontFamily: FONT_SPACE_GROTESK,
         fontSize: 12,
         lineHeight: 16,
         fontWeight: "400",
@@ -105,7 +109,7 @@ export const getVariantStyle = (variant: TextVariant): TypographyStyle => {
       };
     default:
       return {
-        fontFamily: "var(--font-source-sans-3)",
+        fontFamily: FONT_SOURCE_SANS_3,
         fontSize: 15,
         lineHeight: 22,
         fontWeight: "400",

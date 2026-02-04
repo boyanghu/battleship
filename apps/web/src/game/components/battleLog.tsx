@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { View, YStack, ScrollView } from "tamagui";
+import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { type BattleLogEntry } from "../types";
 
@@ -10,7 +10,7 @@ interface BattleLogProps {
 }
 
 // Glass effect styles (from Figma)
-const glassStyle = {
+const glassStyle: React.CSSProperties = {
   backdropFilter: "blur(6px)",
   WebkitBackdropFilter: "blur(6px)",
   backgroundColor: "rgba(26, 33, 48, 0.5)",
@@ -40,7 +40,6 @@ export default function BattleLog({ entries }: BattleLogProps) {
       borderRadius={14}
       padding="$4"
       width={180}
-      // @ts-expect-error - style prop for glass effect
       style={glassStyle}
     >
       <YStack gap={10}>
@@ -52,23 +51,28 @@ export default function BattleLog({ entries }: BattleLogProps) {
         {/* Divider */}
         <View height={1} backgroundColor="$neutral_700" width="100%" />
 
-        {/* Entries - scrollable using Tamagui ScrollView */}
+        {/* Entries - scrollable div */}
         {entries.length === 0 ? (
           <UText variant="body-sm" color="$neutral_400">
             No actions yet.
           </UText>
         ) : (
-          <ScrollView
+          <div
             ref={scrollRef}
-            maxHeight={MAX_ENTRIES_HEIGHT}
-            showsVerticalScrollIndicator={false}
+            style={{
+              maxHeight: MAX_ENTRIES_HEIGHT,
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollbarWidth: "none", // Firefox
+              msOverflowStyle: "none", // IE/Edge
+            }}
           >
             <YStack gap={8}>
               {entries.map((entry) => (
                 <BattleLogEntryRow key={entry.id} entry={entry} />
               ))}
             </YStack>
-          </ScrollView>
+          </div>
         )}
       </YStack>
     </View>

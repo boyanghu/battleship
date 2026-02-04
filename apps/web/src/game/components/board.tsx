@@ -146,14 +146,13 @@ export default function Board({
         borderColor={borderColor}
         borderRadius={14}
         padding={8}
-        // @ts-expect-error - CSS grid properties
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
           gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
           gap: `${CELL_GAP}px`,
           cursor: disabled ? "not-allowed" : undefined,
-        }}
+        } as React.CSSProperties}
       >
         {renderCells()}
       </View>

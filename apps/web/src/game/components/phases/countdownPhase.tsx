@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { YStack } from "tamagui";
 import { useMutation } from "convex/react";
-import type { Id } from "convex/values";
+import type { Id } from "@server/_generated/dataModel";
 
 import { api } from "@server/_generated/api";
 import { UPage } from "@/lib/components/core/layout";

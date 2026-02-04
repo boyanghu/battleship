@@ -63,7 +63,6 @@ export default function EnemyCell({
         onHoverIn={onHoverIn}
         onHoverOut={onHoverOut}
         hoverStyle={{ backgroundColor: "$neutral_700" }}
-        // @ts-expect-error - style prop for glow animation
         style={isGlow ? glowStyle : undefined}
       >
         {/* Hit/Sunk marker - red dot */}

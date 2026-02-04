@@ -95,8 +95,7 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
         left={31}
         top="50%"
         zIndex={10}
-        // @ts-expect-error - transform for vertical centering
-        style={{ transform: "translateY(-50%)" }}
+        style={{ transform: "translateY(-50%)" } as React.CSSProperties}
       >
         <BattleLog entries={state.battleLog} />
       </View>
@@ -142,8 +141,7 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
           justifyContent="center"
           alignItems="center"
           zIndex={20}
-          // @ts-expect-error - style prop for overlay
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }}
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" } as React.CSSProperties}
         >
           <YStack alignItems="center" gap="$4">
             <UText variant="hxl" color="$neutral_200">

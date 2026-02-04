@@ -13,7 +13,7 @@ interface GuidanceStripProps {
 }
 
 // Glass effect styles (from Figma)
-const glassStyle = {
+const glassStyle: React.CSSProperties = {
   backdropFilter: "blur(6px)",
   WebkitBackdropFilter: "blur(6px)",
   backgroundColor: "rgba(26, 33, 48, 0.5)",
@@ -33,7 +33,7 @@ export default function GuidanceStrip({
   const { GlowStyles, glowStyle } = useGlowAnimation({ duration: 1000 });
 
   const handlePress = () => {
-    eventBuilder.setAction("click").log();
+    eventBuilder.setAction("Press").log();
     onExecute();
   };
 
@@ -48,7 +48,6 @@ export default function GuidanceStrip({
         borderRadius={14}
         width={500}
         alignSelf="center"
-        // @ts-expect-error - style prop for glass effect
         style={glassStyle}
       >
         <XStack gap="$3" alignItems="center" justifyContent="center">
@@ -72,7 +71,6 @@ export default function GuidanceStrip({
             borderRadius={10}
             cursor="pointer"
             onPress={handlePress}
-            // @ts-expect-error - style prop for glow animation
             style={glowStyle}
           >
             <UText variant="label-md" color="$neutral_900">

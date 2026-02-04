@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@server/_generated/api";
-import type { Id } from "convex/values";
+import type { Id } from "@server/_generated/dataModel";
 import {
   type BattleLogEntry,
   type Coordinate,

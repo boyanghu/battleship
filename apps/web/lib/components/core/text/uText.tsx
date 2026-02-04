@@ -7,7 +7,7 @@ import { type TextVariant } from "./textVariant";
 import { getVariantStyle } from "./textStyles";
 
 export interface UTextProps
-  extends Omit<TextProps, "fontFamily" | "fontSize" | "fontWeight" | "letterSpacing"> {
+  extends Omit<TextProps, "fontFamily" | "fontSize" | "fontWeight"> {
   variant?: TextVariant;
 }
 

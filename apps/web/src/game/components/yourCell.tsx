@@ -146,7 +146,6 @@ export default function YourCell({
       position="relative"
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
-      // @ts-expect-error - native mouse event
       onMouseDown={isShip && onDragStart ? onDragStart : undefined}
       cursor={cursorStyle}
       opacity={opacity}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { View } from "tamagui";
 import { useQuery, useMutation } from "convex/react";
-import type { Id } from "convex/values";
+import type { Id } from "@server/_generated/dataModel";
 
 import { api } from "@server/_generated/api";
 import { getOrCreateDeviceId } from "@/lib/device";
