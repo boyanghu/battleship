@@ -14,3 +14,8 @@ export {
   moveAndResolve,
   clampDragPosition,
 } from "./placementResolver";
+
+export {
+  getStrategistRecommendation,
+  formatStrategistInstruction,
+} from "./strategist";

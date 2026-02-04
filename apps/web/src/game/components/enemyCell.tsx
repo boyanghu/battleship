@@ -1,11 +1,12 @@
 "use client";
 
 import { View } from "tamagui";
+import { useGlowAnimation, staticGlowStyle } from "@/lib/styles";
 import { type EnemyCellState } from "../types";
 
 interface EnemyCellProps {
   state?: EnemyCellState;
-  isGlow?: boolean; // Recommended cell glow effect
+  isGlow?: boolean; // Recommended cell glow effect (pulsating)
   onPress?: () => void;
   onHoverIn?: () => void;
   onHoverOut?: () => void;
@@ -13,17 +14,10 @@ interface EnemyCellProps {
 
 const CELL_SIZE = 32;
 
-// Glow box shadow for recommended cell (from Figma)
-const glowShadow = `
-  0px 2px 4px 0px #7fb2ff,
-  0px 4px 26px 0px #3b82f6,
-  0px -1px 4px 0px #ffd08a,
-  0px -2px 24px 0px #ff9b00
-`;
-
 /**
  * Enemy board cell - shows hits, misses, and sunk markers.
  * States from Figma: neutral, hover, miss, hit, sunk, glow
+ * When isGlow is true, shows pulsating glow animation for strategist recommendation.
  */
 export default function EnemyCell({
   state = "neutral",
@@ -32,6 +26,11 @@ export default function EnemyCell({
   onHoverIn,
   onHoverOut,
 }: EnemyCellProps) {
+  // Pulsating glow animation for recommended cell
+  const { GlowStyles, glowStyle } = useGlowAnimation({
+    duration: 1000,
+    enabled: isGlow,
+  });
   // Background color based on state
   const getBackgroundColor = () => {
     if (state === "sunk") return "transparent";
@@ -47,43 +46,48 @@ export default function EnemyCell({
   const showMissMarker = state === "miss";
 
   return (
-    <View
-      width={CELL_SIZE}
-      height={CELL_SIZE}
-      backgroundColor={getBackgroundColor()}
-      borderRadius={4}
-      justifyContent="center"
-      alignItems="center"
-      cursor="pointer"
-      position="relative"
-      onPress={onPress}
-      onHoverIn={onHoverIn}
-      onHoverOut={onHoverOut}
-      hoverStyle={{ backgroundColor: "$neutral_700" }}
-      // @ts-expect-error - style prop for box-shadow
-      style={isGlow ? { boxShadow: glowShadow } : undefined}
-    >
-      {/* Hit/Sunk marker - red dot */}
-      {showHitMarker && (
-        <View
-          width={8}
-          height={8}
-          borderRadius="$round"
-          backgroundColor="$destructive_500"
-        />
-      )}
+    <>
+      {/* Inject glow animation keyframes when needed */}
+      {isGlow && <GlowStyles />}
 
-      {/* Miss marker - white hollow circle */}
-      {showMissMarker && (
-        <View
-          width={8}
-          height={8}
-          borderRadius="$round"
-          borderWidth={2}
-          borderColor="$neutral_400"
-          backgroundColor="transparent"
-        />
-      )}
-    </View>
+      <View
+        width={CELL_SIZE}
+        height={CELL_SIZE}
+        backgroundColor={getBackgroundColor()}
+        borderRadius={4}
+        justifyContent="center"
+        alignItems="center"
+        cursor="pointer"
+        position="relative"
+        onPress={onPress}
+        onHoverIn={onHoverIn}
+        onHoverOut={onHoverOut}
+        hoverStyle={{ backgroundColor: "$neutral_700" }}
+        // @ts-expect-error - style prop for glow animation
+        style={isGlow ? glowStyle : undefined}
+      >
+        {/* Hit/Sunk marker - red dot */}
+        {showHitMarker && (
+          <View
+            width={8}
+            height={8}
+            borderRadius="$round"
+            backgroundColor="$destructive_500"
+          />
+        )}
+
+        {/* Miss marker - white hollow circle */}
+        {showMissMarker && (
+          <View
+            width={8}
+            height={8}
+            borderRadius="$round"
+            borderWidth={2}
+            borderColor="$neutral_400"
+            backgroundColor="transparent"
+          />
+        )}
+      </View>
+    </>
   );
 }

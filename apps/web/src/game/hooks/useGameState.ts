@@ -14,6 +14,10 @@ import {
   type YourCellState,
   parseCoordinate,
 } from "../types";
+import {
+  getStrategistRecommendation,
+  formatStrategistInstruction,
+} from "../utils";
 
 // Ship type names for display
 const SHIP_NAMES: Record<string, string> = {
@@ -356,6 +360,93 @@ export function useGameState({
     return remaining;
   }, [game, deviceId]);
 
+  // Strategist threshold: show guidance when < 7 seconds remaining
+  const STRATEGIST_THRESHOLD_MS = 7000;
+
+  // Calculate strategist guidance when timer is low and it's our turn
+  const guidance: Guidance | null = useMemo(() => {
+    // Only show guidance during battle phase, on our turn, when timer is low
+    if (phase !== "battle" || turn !== "you" || isFiring) {
+      return null;
+    }
+
+    // Only activate when under threshold
+    if (timeRemainingMs > STRATEGIST_THRESHOLD_MS || timeRemainingMs <= 0) {
+      return null;
+    }
+
+    // Get recommendation from strategist algorithm
+    const recommendedCoord = getStrategistRecommendation(enemyCells);
+    if (!recommendedCoord) {
+      return null;
+    }
+
+    return {
+      role: "STRATEGIST",
+      instruction: formatStrategistInstruction(recommendedCoord),
+      coordinate: recommendedCoord,
+    };
+  }, [phase, turn, isFiring, timeRemainingMs, enemyCells]);
+
+  // Track if we've already auto-fired for this turn (prevent double-fire)
+  const [hasAutoFired, setHasAutoFired] = useState(false);
+
+  // Reset auto-fire flag when turn changes
+  useEffect(() => {
+    setHasAutoFired(false);
+  }, [game?.currentTurnDeviceId]);
+
+  // Auto-fire when timer hits 0 and it's our turn
+  useEffect(() => {
+    // Only auto-fire if:
+    // - Battle phase
+    // - Our turn
+    // - Not already firing
+    // - Haven't auto-fired this turn
+    // - Timer just hit 0
+    if (
+      phase !== "battle" ||
+      turn !== "you" ||
+      isFiring ||
+      hasAutoFired ||
+      timeRemainingMs > 0
+    ) {
+      return;
+    }
+
+    // Get a target coordinate
+    const targetCoord = getStrategistRecommendation(enemyCells);
+    if (!targetCoord) {
+      return;
+    }
+
+    console.log("Auto-firing at:", targetCoord);
+    setHasAutoFired(true);
+
+    // Fire at the recommended coordinate
+    const { col, row } = parseCoordinate(targetCoord);
+    const x = col.charCodeAt(0) - 65;
+    const y = row - 1;
+
+    fireShotMutation({
+      gameId: typedGameId,
+      deviceId: deviceId!,
+      coord: { x, y },
+    }).catch((error) => {
+      console.error("Auto-fire failed:", error);
+    });
+  }, [
+    phase,
+    turn,
+    isFiring,
+    hasAutoFired,
+    timeRemainingMs,
+    enemyCells,
+    fireShotMutation,
+    typedGameId,
+    deviceId,
+  ]);
+
   // Build battle log from both boards' shots
   const battleLog = useMemo(() => {
     const entries: BattleLogEntry[] = [];
@@ -414,7 +505,7 @@ export function useGameState({
       enemyCells,
       yourCells,
       battleLog,
-      guidance: null, // No AI guidance for now
+      guidance, // Strategist guidance when timer < 7 seconds
     };
   }, [
     game,
@@ -426,6 +517,7 @@ export function useGameState({
     enemyCells,
     yourCells,
     battleLog,
+    guidance,
   ]);
 
   // Fire at coordinate (real mutation with input locking)
