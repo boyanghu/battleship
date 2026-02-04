@@ -2,9 +2,6 @@ import type { Id } from "../../_generated/dataModel";
 import type { QueryCtx } from "../../_generated/server";
 import type { Board, Coord } from "../helpers";
 
-// Consider hover stale after 2 seconds (allows for network latency)
-const HOVER_STALE_MS = 2000;
-
 export const getGameHandler = async (
   ctx: QueryCtx,
   args: { gameId: Id<"games">; deviceId: string }
@@ -34,7 +31,8 @@ export const getGameHandler = async (
   // Only return hover if:
   // 1. We're in PvP mode and battle phase
   // 2. The hover is from the opponent (not the requesting player)
-  // 3. The hover is not stale (within HOVER_STALE_MS)
+  // Note: No staleness check here - Convex queries must be deterministic (no Date.now())
+  // Server-side cleanup in fireShot/advanceTurnIfExpired clears hover on turn changes
   let enemyHoverCoord: Coord | null = null;
 
   if (
@@ -43,11 +41,7 @@ export const getGameHandler = async (
     game.hoverState &&
     game.hoverState.deviceId !== args.deviceId
   ) {
-    const now = Date.now();
-    const isStale = now - game.hoverState.updatedAt > HOVER_STALE_MS;
-    if (!isStale) {
-      enemyHoverCoord = game.hoverState.coord;
-    }
+    enemyHoverCoord = game.hoverState.coord;
   }
 
   // Return game with sanitized boards and enemy hover
