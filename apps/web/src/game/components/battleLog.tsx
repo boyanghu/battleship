@@ -1,17 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import { View, YStack } from "tamagui";
-import dynamic from "next/dynamic";
+import { useEffect, useRef } from "react";
+import { View, YStack, ScrollView } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { type BattleLogEntry } from "../types";
-import type { FixedSizeList as FixedSizeListType } from "react-window";
-
-// Dynamically import react-window with SSR disabled
-const FixedSizeList = dynamic(
-  () => import("react-window").then((mod) => mod.FixedSizeList),
-  { ssr: false }
-) as typeof FixedSizeListType;
 
 interface BattleLogProps {
   entries: BattleLogEntry[];
@@ -24,39 +16,24 @@ const glassStyle = {
   backgroundColor: "rgba(26, 33, 48, 0.5)",
 };
 
-// Virtualized list config
-const LIST_HEIGHT = 300;
-const LIST_WIDTH = 148; // 180 - padding
-const ITEM_HEIGHT = 50; // Height of each entry row
+// Max height for scrollable entries container
+const MAX_ENTRIES_HEIGHT = 300;
 
 /**
  * Battle log panel - vertically centered on left side of screen.
  * Shows chronological record of actions with glass effect.
- * Uses react-window for virtualized rendering.
+ * Entries are sorted by timestamp and scrollable.
  * Color coding: YOU = secondary (orange), ENEMY = primary (blue)
  */
 export default function BattleLog({ entries }: BattleLogProps) {
-  const listRef = useRef<FixedSizeListType>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new entries arrive
   useEffect(() => {
-    if (listRef.current && entries.length > 0) {
-      listRef.current.scrollToItem(entries.length - 1, "end");
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [entries.length]);
-
-  // Row renderer for virtualized list
-  const Row = useCallback(
-    ({ index, style }: { index: number; style: React.CSSProperties }) => {
-      const entry = entries[index];
-      return (
-        <div style={style}>
-          <BattleLogEntryRow entry={entry} />
-        </div>
-      );
-    },
-    [entries]
-  );
 
   return (
     <View
@@ -75,21 +52,23 @@ export default function BattleLog({ entries }: BattleLogProps) {
         {/* Divider */}
         <View height={1} backgroundColor="$neutral_700" width="100%" />
 
-        {/* Entries - virtualized list */}
+        {/* Entries - scrollable using Tamagui ScrollView */}
         {entries.length === 0 ? (
           <UText variant="body-sm" color="$neutral_400">
             No actions yet.
           </UText>
         ) : (
-          <FixedSizeList
-            ref={listRef}
-            height={Math.min(LIST_HEIGHT, entries.length * ITEM_HEIGHT)}
-            width={LIST_WIDTH}
-            itemCount={entries.length}
-            itemSize={ITEM_HEIGHT}
+          <ScrollView
+            ref={scrollRef}
+            maxHeight={MAX_ENTRIES_HEIGHT}
+            showsVerticalScrollIndicator
           >
-            {Row}
-          </FixedSizeList>
+            <YStack gap={8}>
+              {entries.map((entry) => (
+                <BattleLogEntryRow key={entry.id} entry={entry} />
+              ))}
+            </YStack>
+          </ScrollView>
         )}
       </YStack>
     </View>
