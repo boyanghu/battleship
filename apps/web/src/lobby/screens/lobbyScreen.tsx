@@ -38,6 +38,7 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
   // Local state
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [localCountdown, setLocalCountdown] = useState<number | null>(null);
   const advancedRef = useRef(false);
 
   // Initialize device ID
@@ -116,9 +117,35 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
     [Event]
   );
 
+  // Local countdown effect (for demo/testing without backend)
+  useEffect(() => {
+    if (localCountdown === null) return;
+
+    if (localCountdown === 0) {
+      // Navigate to game when countdown finishes
+      router.push(`/game/${gameId}`);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setLocalCountdown(localCountdown - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [localCountdown, gameId, router]);
+
   // Handlers
   const handleReady = useCallback(() => {
     if (!deviceId) return;
+    
+    // For demo: start local countdown when clicking READY
+    // In production, this would be handled by the backend
+    if (!isReady) {
+      setLocalCountdown(5);
+    } else {
+      setLocalCountdown(null);
+    }
+    
     setReady({ gameId: typedGameId, deviceId, ready: !isReady });
   }, [deviceId, typedGameId, setReady, isReady]);
 
@@ -130,16 +157,19 @@ export default function LobbyScreen({ gameId }: LobbyScreenProps) {
       : "connected"
     : "waiting";
 
-  // Show countdown overlay
-  if (countdown !== null && countdown > 0) {
+  // Active countdown (local demo or from backend)
+  const activeCountdown = localCountdown ?? countdown;
+
+  // Show countdown overlay (matching Figma design)
+  if (activeCountdown !== null && activeCountdown > 0) {
     return (
       <UPage>
-        <YStack flex={1} justifyContent="center" alignItems="center" gap="$4">
-          <UText variant="h1" color="$neutral_200">
-            STARTING IN
-          </UText>
+        <YStack flex={1} justifyContent="center" alignItems="center" gap="$2">
           <UText variant="hxl" color="$neutral_200">
-            {countdown}
+            {activeCountdown}
+          </UText>
+          <UText variant="label-md" color="$neutral_400">
+            BATTLE BEGINS
           </UText>
         </YStack>
       </UPage>
