@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import useAnalytics from "@/lib/analytics/useAnalytics";
@@ -10,6 +10,7 @@ import {
   Battlefield,
   GuidanceStrip,
 } from "../index";
+import { type EffectInstance } from "../effects";
 import { useGameState, useThrottledHover } from "../../hooks";
 import { type Coordinate } from "../../types";
 import type { Id } from "@server/_generated/dataModel";
@@ -32,7 +33,57 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   const { Event } = useAnalytics();
 
   // Game state from Convex
-  const { state, isLoading, isFiring, fireAt } = useGameState({ gameId, deviceId });
+  const { state, isLoading, isFiring, fireAt, lastOutcome, lastEnemyShot } = useGameState({ gameId, deviceId });
+
+  // Effect system state - tracks active plume effects on both boards
+  const [effects, setEffects] = useState<EffectInstance[]>([]);
+  const processedOutcomeRef = useRef<string | null>(null);
+  const processedEnemyShotRef = useRef<string | null>(null);
+
+  // Spawn effect for my shot (on enemy board)
+  useEffect(() => {
+    if (!lastOutcome) return;
+
+    // Create unique key for this outcome to prevent duplicates
+    const outcomeKey = `${lastOutcome.coordinate}-${lastOutcome.result}-${Date.now()}`;
+    if (processedOutcomeRef.current === `${lastOutcome.coordinate}-${lastOutcome.result}`) return;
+    processedOutcomeRef.current = `${lastOutcome.coordinate}-${lastOutcome.result}`;
+
+    const variant = lastOutcome.result === "miss" ? "miss" : "hitEnemy";
+    const effect: EffectInstance = {
+      id: `my-${outcomeKey}`,
+      coord: lastOutcome.coordinate,
+      variant,
+      createdAt: Date.now(),
+    };
+
+    setEffects((prev) => [...prev, effect]);
+  }, [lastOutcome]);
+
+  // Spawn effect for enemy shot (on my board)
+  useEffect(() => {
+    if (!lastEnemyShot) return;
+
+    // Create unique key for this shot to prevent duplicates
+    const shotKey = `${lastEnemyShot.coordinate}-${lastEnemyShot.result}`;
+    if (processedEnemyShotRef.current === shotKey) return;
+    processedEnemyShotRef.current = shotKey;
+
+    const variant = lastEnemyShot.result === "miss" ? "miss" : "hitMe";
+    const effect: EffectInstance = {
+      id: `enemy-${shotKey}-${Date.now()}`,
+      coord: lastEnemyShot.coordinate,
+      variant,
+      createdAt: Date.now(),
+    };
+
+    setEffects((prev) => [...prev, effect]);
+  }, [lastEnemyShot]);
+
+  // Handle effect completion - remove from state
+  const handleEffectComplete = useCallback((id: string) => {
+    setEffects((prev) => prev.filter((e) => e.id !== id));
+  }, []);
 
   // Throttled hover for real-time enemy hover visualization (PvP)
   const { updateHover, clearHover } = useThrottledHover({
@@ -77,6 +128,18 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
       fireAt(state.guidance.coordinate);
     }
   }, [fireAt, state?.guidance]);
+
+  // Split effects by board (must be before early return to satisfy hooks rules)
+  // - Enemy board effects: my shots (hitEnemy, miss on enemy board)
+  // - Your board effects: enemy shots (hitMe, miss on my board)
+  const enemyBoardEffects = useMemo(
+    () => effects.filter((e) => (e.variant === "miss" && e.id.startsWith("my-")) || e.variant === "hitEnemy"),
+    [effects]
+  );
+  const yourBoardEffects = useMemo(
+    () => effects.filter((e) => (e.variant === "miss" && e.id.startsWith("enemy-")) || e.variant === "hitMe"),
+    [effects]
+  );
 
   // Loading state
   if (isLoading || !state) {
@@ -136,6 +199,9 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
           isFinished={isFinished}
           enemyHoverCoord={state.enemyHoverCoord}
           onCellHover={handleCellHover}
+          enemyBoardEffects={enemyBoardEffects}
+          yourBoardEffects={yourBoardEffects}
+          onEffectComplete={handleEffectComplete}
         />
       </View>
 

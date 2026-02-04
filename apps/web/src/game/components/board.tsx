@@ -5,6 +5,7 @@ import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import EnemyCell from "./enemyCell";
 import YourCell from "./yourCell";
+import { EffectsOverlay, type EffectInstance } from "./effects";
 import {
   type BoardSide,
   type Coordinate,
@@ -25,6 +26,8 @@ interface BoardProps {
   onCellPress?: (coordinate: Coordinate) => void;
   enemyHoverCoord?: Coordinate | null; // Enemy's hover position on your board (PvP)
   onCellHover?: (coordinate: Coordinate | null) => void; // Report hover position to server (PvP)
+  effects?: EffectInstance[]; // Plume effects to render on this board
+  onEffectComplete?: (id: string) => void; // Callback when effect animation completes
 }
 
 const CELL_SIZE = 32;
@@ -46,6 +49,8 @@ export default function Board({
   onCellPress,
   enemyHoverCoord = null,
   onCellHover,
+  effects = [],
+  onEffectComplete,
 }: BoardProps) {
   const [hoveredCell, setHoveredCell] = useState<Coordinate | null>(null);
 
@@ -162,13 +167,14 @@ export default function Board({
         {label}
       </UText>
 
-      {/* Board container with border */}
+      {/* Board container with border - wrapped in relative container for effects */}
       <View
         borderWidth={1}
         borderColor={borderColor}
         borderRadius={14}
         padding={8}
         style={{
+          position: "relative",
           display: "grid",
           gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
           gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
@@ -177,6 +183,13 @@ export default function Board({
         } as React.CSSProperties}
       >
         {renderCells()}
+        {/* Effects overlay for plume animations */}
+        {onEffectComplete && (
+          <EffectsOverlay
+            effects={effects}
+            onEffectComplete={onEffectComplete}
+          />
+        )}
       </View>
 
       {/* Bottom label - shows hovered cell coordinate */}

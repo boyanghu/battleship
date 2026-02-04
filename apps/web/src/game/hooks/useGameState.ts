@@ -88,11 +88,20 @@ export interface ShotOutcome {
   shipName?: string;
 }
 
+// Shot effect for visual feedback (plume effects)
+export interface ShotEffect {
+  id: string;
+  board: "enemy" | "mine";
+  coordinate: Coordinate;
+  variant: "miss" | "hitEnemy" | "hitMe";
+}
+
 interface UseGameStateResult {
   state: GameUIState | null;
   isLoading: boolean;
   isFiring: boolean; // True while waiting for shot resolution
-  lastOutcome: ShotOutcome | null; // Last shot result for feedback
+  lastOutcome: ShotOutcome | null; // Last shot result for feedback (my shot)
+  lastEnemyShot: ShotOutcome | null; // Last enemy shot result for feedback
   fireAt: (coordinate: Coordinate) => void;
 }
 
@@ -176,6 +185,10 @@ export function useGameState({
   const [lastOutcome, setLastOutcome] = useState<ShotOutcome | null>(null);
   const [lastShotCount, setLastShotCount] = useState(0);
 
+  // Enemy shot state - tracks when enemy fires at us
+  const [lastEnemyShot, setLastEnemyShot] = useState<ShotOutcome | null>(null);
+  const [lastEnemyShotCount, setLastEnemyShotCount] = useState(0);
+
   // Get opponent's deviceId (defined early for use in effects below)
   const opponentDeviceId = useMemo(() => {
     if (!game || !deviceId) return null;
@@ -201,12 +214,19 @@ export function useGameState({
     return () => clearInterval(interval);
   }, [game?.turnStartedAt, game?.turnDurationMs]);
 
-  // Track shot count to detect when shot resolves
+  // Track shot count to detect when my shot resolves (shots on enemy board)
   const currentShotCount = useMemo(() => {
     if (!game || !opponentDeviceId) return 0;
     const opponentBoard = game.boards[opponentDeviceId];
     return opponentBoard?.shotsReceived?.length ?? 0;
   }, [game, opponentDeviceId]);
+
+  // Track enemy shot count to detect when enemy shot resolves (shots on my board)
+  const currentEnemyShotCount = useMemo(() => {
+    if (!game || !deviceId) return 0;
+    const myBoard = game.boards[deviceId];
+    return myBoard?.shotsReceived?.length ?? 0;
+  }, [game, deviceId]);
 
   // Stub for audio/visual feedback - call this when shot resolves
   const onShotResolved = useCallback((outcome: ShotOutcome) => {
@@ -255,6 +275,33 @@ export function useGameState({
       setLastShotCount(currentShotCount);
     }
   }, [currentShotCount, isFiring]);
+
+  // Detect enemy shot resolution - when enemy shot count increases
+  useEffect(() => {
+    // Skip if count didn't increase
+    if (currentEnemyShotCount <= lastEnemyShotCount) return;
+
+    // Get the last shot (the one enemy just fired)
+    if (game && deviceId) {
+      const myBoard = game.boards[deviceId];
+      const shots = myBoard?.shotsReceived ?? [];
+      const lastShot = shots[shots.length - 1];
+
+      if (lastShot) {
+        const outcome: ShotOutcome = {
+          coordinate: coordToString(lastShot.coord),
+          result: lastShot.result,
+          shipName: lastShot.sunkShipType
+            ? SHIP_NAMES[lastShot.sunkShipType]
+            : undefined,
+        };
+        setLastEnemyShot(outcome);
+      }
+    }
+
+    // Update tracked count
+    setLastEnemyShotCount(currentEnemyShotCount);
+  }, [currentEnemyShotCount, lastEnemyShotCount, game, deviceId]);
 
   // Determine turn ownership based on game state
   const turn: TurnOwner = useMemo(() => {
@@ -649,6 +696,7 @@ export function useGameState({
     isLoading: game === undefined,
     isFiring,
     lastOutcome,
+    lastEnemyShot,
     fireAt,
   };
 }

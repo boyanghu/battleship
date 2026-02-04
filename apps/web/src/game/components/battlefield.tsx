@@ -2,6 +2,7 @@
 
 import { XStack } from "tamagui";
 import Board from "./board";
+import { type EffectInstance } from "./effects";
 import {
   type Coordinate,
   type EnemyCellState,
@@ -19,6 +20,9 @@ interface BattlefieldProps {
   isFinished?: boolean; // Game is finished
   enemyHoverCoord?: Coordinate | null; // Enemy's hover position on your board (PvP)
   onCellHover?: (coordinate: Coordinate | null) => void; // Report hover position to server (PvP)
+  enemyBoardEffects?: EffectInstance[]; // Plume effects for enemy board
+  yourBoardEffects?: EffectInstance[]; // Plume effects for your board
+  onEffectComplete?: (id: string) => void; // Callback when effect animation completes
 }
 
 /**
@@ -36,6 +40,9 @@ export default function Battlefield({
   isFinished = false,
   enemyHoverCoord = null,
   onCellHover,
+  enemyBoardEffects = [],
+  yourBoardEffects = [],
+  onEffectComplete,
 }: BattlefieldProps) {
   const isPlayerTurn = turn === "you";
 
@@ -62,6 +69,8 @@ export default function Battlefield({
         enemyCells={enemyCells}
         onCellPress={onFireAt}
         onCellHover={isPlayerTurn && !disabled ? onCellHover : undefined}
+        effects={enemyBoardEffects}
+        onEffectComplete={onEffectComplete}
       />
 
       {/* Player Board (right) - LOCKED LABEL: "YOUR FLEET" */}
@@ -73,6 +82,8 @@ export default function Battlefield({
         disabled={true} // Player board is never interactive in battle
         yourCells={yourCells}
         enemyHoverCoord={!isPlayerTurn ? enemyHoverCoord : null}
+        effects={yourBoardEffects}
+        onEffectComplete={onEffectComplete}
       />
     </XStack>
   );

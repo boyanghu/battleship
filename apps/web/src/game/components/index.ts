@@ -6,6 +6,10 @@ export { default as EnemyCell } from "./enemyCell";
 export { default as YourCell } from "./yourCell";
 export { default as GuidanceStrip } from "./guidanceStrip";
 
+// Effects components
+export { CellPlumeEffect, EffectsOverlay } from "./effects";
+export type { PlumeVariant, EffectInstance } from "./effects";
+
 // Phase components
 export {
   LobbyPhase,
