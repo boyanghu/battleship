@@ -51,7 +51,8 @@ const shotResult = v.union(
 const shot = v.object({
   coord: v.object({ x: v.number(), y: v.number() }),
   result: shotResult,
-  sunkShipType: v.optional(shipType)
+  sunkShipType: v.optional(shipType),
+  timestamp: v.number() // When the shot was fired
 });
 
 // Player's board state

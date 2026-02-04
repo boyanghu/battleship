@@ -47,6 +47,7 @@ interface Shot {
   coord: Coord;
   result: "miss" | "hit" | "sunk";
   sunkShipType?: string;
+  timestamp: number;
 }
 
 interface Ship {
@@ -163,6 +164,7 @@ export function useGameState({
 
   // Convex mutations
   const fireShotMutation = useMutation(api.games.fireShot);
+  const advanceTurnIfExpiredMutation = useMutation(api.games.advanceTurnIfExpired);
 
   // Timer state (in milliseconds)
   const [timeRemainingMs, setTimeRemainingMs] = useState(0);
@@ -412,79 +414,54 @@ export function useGameState({
     };
   }, [isStrategistActive, cachedRecommendation]);
 
-  // Track the turn we've auto-fired for (by turnStartedAt timestamp)
-  const lastAutoFiredTurnRef = useRef<number | null>(null);
+  // Track turns we've already called advanceTurnIfExpired for (prevent duplicate calls)
+  const lastExpiredTurnRef = useRef<number | null>(null);
 
-  // Auto-fire when timer hits 0 and it's our turn
-  // IMPORTANT: We calculate remaining time inline to avoid stale state issues
-  // (timeRemainingMs state might not have updated yet when this effect runs)
+  // Call server to advance turn when timer expires
+  // Server is the source of truth - it validates the turn actually expired
   useEffect(() => {
-    // Skip if not in battle phase or not our turn
+    // Only run during battle phase when it's our turn
     if (phase !== "battle" || turn !== "you") {
       return;
     }
 
-    // Skip if already firing
-    if (isFiring) {
-      return;
-    }
-
-    // Skip if no valid turn timestamp (means turn hasn't started properly)
+    // Skip if no valid turn timestamp
     if (!game?.turnStartedAt || !game?.turnDurationMs) {
       return;
     }
 
-    // Calculate actual remaining time INLINE (don't rely on timeRemainingMs state)
-    // This avoids race conditions where timeRemainingMs hasn't updated yet
+    // Calculate actual remaining time inline (avoid stale state)
     const actualEndTime = game.turnStartedAt + game.turnDurationMs;
     const actualRemaining = actualEndTime - Date.now();
 
-    // Skip if timer hasn't actually expired (with 100ms tolerance for timing)
+    // Skip if timer hasn't actually expired (with small tolerance)
     if (actualRemaining > 100) {
       return;
     }
 
-    // Skip if we already auto-fired for this turn (check by turnStartedAt)
-    if (lastAutoFiredTurnRef.current === game.turnStartedAt) {
+    // Skip if we already called this for this turn
+    if (lastExpiredTurnRef.current === game.turnStartedAt) {
       return;
     }
 
-    // Use cached recommendation or calculate new one
-    const targetCoord = cachedRecommendation ?? getStrategistRecommendation(enemyCells);
-    if (!targetCoord || !deviceId) {
-      return;
-    }
+    console.log("Turn expired, calling advanceTurnIfExpired");
+    lastExpiredTurnRef.current = game.turnStartedAt;
 
-    console.log("Auto-firing at:", targetCoord, "actualRemaining:", actualRemaining);
-    lastAutoFiredTurnRef.current = game.turnStartedAt;
-
-    // Fire at the recommended coordinate
-    const { col, row } = parseCoordinate(targetCoord);
-    const x = col.charCodeAt(0) - 65;
-    const y = row - 1;
-
-    fireShotMutation({
-      gameId: typedGameId,
-      deviceId,
-      coord: { x, y },
-    }).catch((error) => {
-      console.error("Auto-fire failed:", error);
+    // Let server handle the turn timeout
+    advanceTurnIfExpiredMutation({ gameId: typedGameId }).catch((error) => {
+      console.error("Failed to advance turn:", error);
     });
   }, [
     phase,
     turn,
-    isFiring,
-    timeRemainingMs, // Still depend on this to trigger re-checks as timer updates
+    timeRemainingMs, // Depend on this to trigger checks as timer updates
     game?.turnStartedAt,
     game?.turnDurationMs,
-    cachedRecommendation,
-    enemyCells,
-    fireShotMutation,
+    advanceTurnIfExpiredMutation,
     typedGameId,
-    deviceId,
   ]);
 
-  // Build battle log from both boards' shots
+  // Build battle log from both boards' shots, sorted by timestamp
   const battleLog = useMemo(() => {
     const entries: BattleLogEntry[] = [];
     if (!game || !deviceId || !opponentDeviceId) return entries;
@@ -496,14 +473,14 @@ export function useGameState({
     if (opponentBoard) {
       opponentBoard.shotsReceived.forEach((shot, index) => {
         entries.push({
-          id: `you-${index}`,
+          id: `you-${shot.timestamp}-${index}`,
           actor: "you",
           coordinate: coordToString(shot.coord),
           result: shot.result,
           shipName: shot.sunkShipType
             ? SHIP_NAMES[shot.sunkShipType]
             : undefined,
-          timestamp: 0, // We don't have timestamps in shots, use index for ordering
+          timestamp: shot.timestamp,
         });
       });
     }
@@ -512,21 +489,22 @@ export function useGameState({
     if (myBoard) {
       myBoard.shotsReceived.forEach((shot, index) => {
         entries.push({
-          id: `enemy-${index}`,
+          id: `enemy-${shot.timestamp}-${index}`,
           actor: "enemy",
           coordinate: coordToString(shot.coord),
           result: shot.result,
           shipName: shot.sunkShipType
             ? SHIP_NAMES[shot.sunkShipType]
             : undefined,
-          timestamp: 1, // Slightly higher to interleave (crude ordering)
+          timestamp: shot.timestamp,
         });
       });
     }
 
-    // Sort by id to maintain some order (you-0, enemy-0, you-1, enemy-1, etc.)
-    // This is approximate since we don't have real timestamps
-    return entries.slice(-10); // Show last 10 entries
+    // Sort by timestamp ascending (oldest first, newest at bottom)
+    entries.sort((a, b) => a.timestamp - b.timestamp);
+
+    return entries;
   }, [game, deviceId, opponentDeviceId]);
 
   // Build UI state from real data

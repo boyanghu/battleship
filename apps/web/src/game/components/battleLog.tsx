@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { type BattleLogEntry } from "../types";
@@ -15,21 +16,35 @@ const glassStyle = {
   backgroundColor: "rgba(26, 33, 48, 0.5)",
 };
 
+// Max height for scrollable entries container
+const MAX_ENTRIES_HEIGHT = 300;
+
 /**
  * Battle log panel - vertically centered on left side of screen.
  * Shows chronological record of actions with glass effect.
+ * Entries are sorted by timestamp and scrollable.
  * Color coding: YOU = secondary (orange), ENEMY = primary (blue)
  */
 export default function BattleLog({ entries }: BattleLogProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new entries arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [entries.length]);
+
   return (
     <View
       borderRadius={14}
       padding="$4"
+      width={180}
       // @ts-expect-error - style prop for glass effect
       style={glassStyle}
     >
       <YStack gap={10}>
-        {/* Header */}
+        {/* Header - fixed */}
         <UText variant="label-md" color="$neutral_400" textAlign="right">
           BATTLE LOG
         </UText>
@@ -37,16 +52,28 @@ export default function BattleLog({ entries }: BattleLogProps) {
         {/* Divider */}
         <View height={1} backgroundColor="$neutral_700" width="100%" />
 
-        {/* Entries */}
-        {entries.length === 0 ? (
-          <UText variant="body-sm" color="$neutral_400">
-            No actions yet.
-          </UText>
-        ) : (
-          entries.map((entry) => (
-            <BattleLogEntryRow key={entry.id} entry={entry} />
-          ))
-        )}
+        {/* Entries - scrollable container */}
+        <View
+          ref={scrollRef}
+          // @ts-expect-error - style prop for scrollable container
+          style={{
+            maxHeight: MAX_ENTRIES_HEIGHT,
+            overflowY: "auto",
+            overflowX: "hidden",
+          }}
+        >
+          {entries.length === 0 ? (
+            <UText variant="body-sm" color="$neutral_400">
+              No actions yet.
+            </UText>
+          ) : (
+            <YStack gap={8}>
+              {entries.map((entry) => (
+                <BattleLogEntryRow key={entry.id} entry={entry} />
+              ))}
+            </YStack>
+          )}
+        </View>
       </YStack>
     </View>
   );

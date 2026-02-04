@@ -75,7 +75,8 @@ export const fireShotHandler = async (
   const newShot: Shot = {
     coord: args.coord,
     result,
-    sunkShipType
+    sunkShipType,
+    timestamp
   };
   boards[opponentDeviceId] = {
     ...opponentBoard,

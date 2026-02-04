@@ -40,6 +40,7 @@ export interface Shot {
   coord: Coord;
   result: ShotResult;
   sunkShipType?: ShipType;
+  timestamp: number;
 }
 
 export interface Board {
