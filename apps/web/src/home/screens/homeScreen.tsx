@@ -44,7 +44,7 @@ export default function HomeScreen() {
     setCreating(true);
     try {
       const result = await createGame({ deviceId });
-      router.push(`/lobby/${result.gameId}`);
+      router.push(`/game/${result.gameId}`);
     } finally {
       setCreating(false);
     }

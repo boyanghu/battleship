@@ -1,13 +1,13 @@
-import LobbyScreen from "@/src/lobby/screens/lobbyScreen";
+import { redirect } from "next/navigation";
 
 interface LobbyPageProps {
   params: { gameId: string };
 }
 
 /**
- * Lobby page - thin wrapper for LobbyScreen.
- * All UI logic lives in src/lobby/screens/lobbyScreen.tsx
+ * Redirect old lobby URLs to the unified game page.
+ * The game page now handles all phases including lobby.
  */
 export default function LobbyPage({ params }: LobbyPageProps) {
-  return <LobbyScreen gameId={params.gameId} />;
+  redirect(`/game/${params.gameId}`);
 }

@@ -1,30 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { View, YStack } from "tamagui";
-import { UText } from "@/lib/components/core/text";
-import useAnalytics from "@/lib/analytics/useAnalytics";
+import { useEffect, useState } from "react";
+import { View } from "tamagui";
+import { useQuery, useMutation } from "convex/react";
+import type { Id } from "convex/values";
+
+import { api } from "@server/_generated/api";
 import { getOrCreateDeviceId } from "@/lib/device";
+import { UText } from "@/lib/components/core/text";
 import {
-  StatusHud,
-  BattleLog,
-  Battlefield,
-  GuidanceStrip,
+  LobbyPhase,
+  CountdownPhase,
+  PlacementPhase,
+  BattlePhase,
+  FinishedPhase,
 } from "../components";
-import { useGameState } from "../hooks";
-import { type Coordinate } from "../types";
 
 interface GameScreenProps {
   gameId: string;
 }
 
 /**
- * Main game screen - the command console experience.
- * HUD overlay pattern with battlefield as primary surface.
- * Battle log is vertically centered on left side.
+ * Game screen - phase router that renders the appropriate UI
+ * based on the current game status.
+ *
+ * Phases: lobby → countdown → placement → battle → finished
  */
 export default function GameScreen({ gameId }: GameScreenProps) {
-  const { Event } = useAnalytics();
+  const typedGameId = gameId as Id<"games">;
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
   // Initialize device ID
@@ -32,105 +35,69 @@ export default function GameScreen({ gameId }: GameScreenProps) {
     setDeviceId(getOrCreateDeviceId());
   }, []);
 
-  // Game state from Convex
-  const { state, isLoading, fireAt } = useGameState({ gameId, deviceId });
+  // Fetch game state
+  const game = useQuery(api.games.getGame, { gameId: typedGameId });
+  const joinGame = useMutation(api.games.joinGame);
 
-  // Event builder for guidance execute button
-  const executeEventBuilder = useMemo(
-    () => Event().setProductName("Game").setComponentName("GuidanceExecute"),
-    [Event]
-  );
-
-  // Handle fire action from board click
-  const handleFireAt = useCallback(
-    (coordinate: Coordinate) => {
-      fireAt(coordinate);
-    },
-    [fireAt]
-  );
-
-  // Handle guidance execute action
-  const handleExecute = useCallback(() => {
-    if (state?.guidance) {
-      fireAt(state.guidance.coordinate);
-    }
-  }, [fireAt, state?.guidance]);
+  // Auto-join game when device ID is available
+  useEffect(() => {
+    if (!deviceId) return;
+    joinGame({ gameId: typedGameId, deviceId });
+  }, [deviceId, typedGameId, joinGame]);
 
   // Loading state
-  if (isLoading || !state) {
+  if (!game || !deviceId) {
     return (
-      <View flex={1} backgroundColor="$bg" justifyContent="center" alignItems="center">
+      <View
+        flex={1}
+        backgroundColor="$bg"
+        justifyContent="center"
+        alignItems="center"
+      >
         <UText variant="h2" color="$neutral_400">
-          Loading tactical systems...
+          Loading...
         </UText>
       </View>
     );
   }
 
-  const isPlayerTurn = state.turn === "you";
+  // Route to appropriate phase component
+  switch (game.status) {
+    case "lobby":
+      return (
+        <LobbyPhase gameId={gameId} deviceId={deviceId} game={game} />
+      );
 
-  return (
-    <View flex={1} backgroundColor="$bg" position="relative">
-      {/* Status HUD - Top */}
-      <View
-        position="absolute"
-        top={31}
-        left={0}
-        right={0}
-        zIndex={10}
-      >
-        <StatusHud
-          phase={state.phase}
-          turn={state.turn}
-          timeRemaining={state.timeRemaining}
-          enemyShipsRemaining={state.enemyShipsRemaining}
-          playerShipsRemaining={state.playerShipsRemaining}
-        />
-      </View>
+    case "countdown":
+      return (
+        <CountdownPhase gameId={gameId} deviceId={deviceId} game={game} />
+      );
 
-      {/* Battle Log - Left Side, Vertically Centered */}
-      <View
-        position="absolute"
-        left={31}
-        top="50%"
-        zIndex={10}
-        // @ts-expect-error - transform for vertical centering
-        style={{ transform: "translateY(-50%)" }}
-      >
-        <BattleLog entries={state.battleLog} />
-      </View>
+    case "placement":
+      return (
+        <PlacementPhase gameId={gameId} deviceId={deviceId} game={game} />
+      );
 
-      {/* Battlefield - Center */}
-      <View
-        flex={1}
-        justifyContent="center"
-        alignItems="center"
-      >
-        <Battlefield
-          turn={state.turn}
-          enemyCells={state.enemyCells}
-          yourCells={state.yourCells}
-          recommendedCell={state.guidance?.coordinate}
-          onFireAt={handleFireAt}
-        />
-      </View>
+    case "battle":
+      return <BattlePhase gameId={gameId} deviceId={deviceId} />;
 
-      {/* Guidance Strip - Bottom (only on player's turn) */}
-      {isPlayerTurn && state.guidance && (
+    case "finished":
+      return (
+        <FinishedPhase gameId={gameId} deviceId={deviceId} game={game} />
+      );
+
+    default:
+      return (
         <View
-          position="absolute"
-          bottom={31}
-          left={0}
-          right={0}
-          zIndex={10}
+          flex={1}
+          backgroundColor="$bg"
+          justifyContent="center"
+          alignItems="center"
         >
-          <GuidanceStrip
-            guidance={state.guidance}
-            onExecute={handleExecute}
-            eventBuilder={executeEventBuilder}
-          />
+          <UText variant="h2" color="$destructive_500">
+            Unknown game state
+          </UText>
         </View>
-      )}
-    </View>
-  );
+      );
+  }
 }
