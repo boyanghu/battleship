@@ -12,9 +12,9 @@ export const advanceFromCountdownHandler = async (
     throw new Error("Game not found");
   }
 
-  // PHASE GUARD
+  // PHASE GUARD - idempotent: return early if already past countdown
   if (game.status !== "countdown") {
-    throw new Error("Cannot advance: game is not in countdown phase");
+    return { ok: true, alreadyAdvanced: true };
   }
 
   // Validate countdown has expired

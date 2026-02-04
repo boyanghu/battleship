@@ -41,9 +41,10 @@ export default function CountdownPhase({
     }
 
     const updateCountdown = () => {
-      const elapsed = Date.now() - game.countdownStartedAt!;
-      const totalSeconds = Math.ceil(game.countdownDurationMs! / 1000);
-      const remaining = Math.max(0, totalSeconds - Math.floor(elapsed / 1000));
+      // Calculate remaining time: endTime - now
+      const endTime = game.countdownStartedAt! + game.countdownDurationMs!;
+      const remainingMs = Math.max(0, endTime - Date.now());
+      const remaining = Math.ceil(remainingMs / 1000);
 
       setCountdown(remaining);
 
