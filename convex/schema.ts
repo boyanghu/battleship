@@ -61,6 +61,13 @@ const board = v.object({
   shotsReceived: v.array(shot)
 });
 
+// Hover state for real-time enemy hover visualization (PvP only)
+const hoverState = v.object({
+  deviceId: v.string(), // Who is hovering
+  coord: v.object({ x: v.number(), y: v.number() }), // Hover position
+  updatedAt: v.number() // For staleness detection
+});
+
 export default defineSchema({
   games: defineTable({
     // Core fields
@@ -83,6 +90,9 @@ export default defineSchema({
     // Turn and winner tracking
     currentTurnDeviceId: v.optional(v.string()),
     winnerDeviceId: v.optional(v.string()),
+
+    // Real-time hover state (PvP battle phase only)
+    hoverState: v.optional(hoverState),
 
     // Timestamps
     createdAt: v.number(),

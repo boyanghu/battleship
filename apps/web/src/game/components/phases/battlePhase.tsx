@@ -10,8 +10,9 @@ import {
   Battlefield,
   GuidanceStrip,
 } from "../index";
-import { useGameState } from "../../hooks";
+import { useGameState, useThrottledHover } from "../../hooks";
 import { type Coordinate } from "../../types";
+import type { Id } from "@server/_generated/dataModel";
 
 interface BattlePhaseProps {
   gameId: string;
@@ -33,6 +34,14 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   // Game state from Convex
   const { state, isLoading, isFiring, fireAt } = useGameState({ gameId, deviceId });
 
+  // Throttled hover for real-time enemy hover visualization (PvP)
+  const { updateHover, clearHover } = useThrottledHover({
+    gameId: gameId as Id<"games">,
+    deviceId,
+    isMyTurn: state?.turn === "you",
+    phase: state?.phase ?? "",
+  });
+
   // Event builder for guidance execute button
   const executeEventBuilder = useMemo(
     () => Event().setProductName("Game").setComponentName("GuidanceExecute"),
@@ -45,6 +54,21 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
       fireAt(coordinate);
     },
     [fireAt]
+  );
+
+  // Handle cell hover for real-time enemy hover visualization (PvP)
+  const handleCellHover = useCallback(
+    (coordinate: Coordinate | null) => {
+      if (coordinate) {
+        // Parse coordinate (e.g., "A1") to {x, y}
+        const col = coordinate.charCodeAt(0) - 65; // A=0, B=1, etc.
+        const row = parseInt(coordinate.slice(1), 10) - 1; // 1-indexed to 0-indexed
+        updateHover({ x: col, y: row });
+      } else {
+        clearHover();
+      }
+    },
+    [updateHover, clearHover]
   );
 
   // Handle guidance execute action
@@ -110,6 +134,8 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
           onFireAt={handleFireAt}
           disabled={isDisabled}
           isFinished={isFinished}
+          enemyHoverCoord={state.enemyHoverCoord}
+          onCellHover={handleCellHover}
         />
       </View>
 

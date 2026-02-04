@@ -73,6 +73,7 @@ interface GameUIState {
   yourCells: Map<Coordinate, YourCellState>;
   battleLog: BattleLogEntry[];
   guidance: Guidance | null;
+  enemyHoverCoord: Coordinate | null; // Enemy's hover position on your board (PvP only)
 }
 
 interface UseGameStateOptions {
@@ -522,6 +523,12 @@ export function useGameState({
     return () => clearInterval(interval);
   }, [phase, game?.turnStartedAt, game?.turnDurationMs, advanceTurnIfExpiredMutation, typedGameId]);
 
+  // Derive enemy hover coordinate (for showing where enemy is hovering on your board)
+  const enemyHoverCoord: Coordinate | null = useMemo(() => {
+    if (!game?.enemyHoverCoord) return null;
+    return coordToString(game.enemyHoverCoord);
+  }, [game?.enemyHoverCoord]);
+
   // Build battle log from both boards' shots, sorted by timestamp
   const battleLog = useMemo(() => {
     const entries: BattleLogEntry[] = [];
@@ -582,6 +589,7 @@ export function useGameState({
       yourCells,
       battleLog,
       guidance, // Strategist guidance when timer < 7 seconds
+      enemyHoverCoord, // Enemy's hover position on your board (PvP only)
     };
   }, [
     game,
@@ -594,6 +602,7 @@ export function useGameState({
     yourCells,
     battleLog,
     guidance,
+    enemyHoverCoord,
   ]);
 
   // Fire at coordinate (real mutation with input locking)

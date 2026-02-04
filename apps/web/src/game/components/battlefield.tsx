@@ -17,6 +17,8 @@ interface BattlefieldProps {
   onFireAt?: (coordinate: Coordinate) => void;
   disabled?: boolean; // Disables all interactions (e.g., during firing or finished state)
   isFinished?: boolean; // Game is finished
+  enemyHoverCoord?: Coordinate | null; // Enemy's hover position on your board (PvP)
+  onCellHover?: (coordinate: Coordinate | null) => void; // Report hover position to server (PvP)
 }
 
 /**
@@ -32,6 +34,8 @@ export default function Battlefield({
   onFireAt,
   disabled = false,
   isFinished = false,
+  enemyHoverCoord = null,
+  onCellHover,
 }: BattlefieldProps) {
   const isPlayerTurn = turn === "you";
 
@@ -57,6 +61,7 @@ export default function Battlefield({
         recommendedCell={isPlayerTurn && !disabled ? recommendedCell : null}
         enemyCells={enemyCells}
         onCellPress={onFireAt}
+        onCellHover={isPlayerTurn && !disabled ? onCellHover : undefined}
       />
 
       {/* Player Board (right) - LOCKED LABEL: "YOUR FLEET" */}
@@ -67,6 +72,7 @@ export default function Battlefield({
         highlighted={yourHighlighted}
         disabled={true} // Player board is never interactive in battle
         yourCells={yourCells}
+        enemyHoverCoord={!isPlayerTurn ? enemyHoverCoord : null}
       />
     </XStack>
   );

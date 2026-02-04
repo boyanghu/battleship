@@ -12,6 +12,7 @@ interface YourCellProps {
   onDragStart?: (e: React.MouseEvent) => void;
   isDragging?: boolean;
   isPreview?: boolean;
+  isEnemyHover?: boolean; // Enemy is hovering over this cell (PvP)
 }
 
 const CELL_SIZE = 32;
@@ -35,6 +36,7 @@ export default function YourCell({
   onDragStart,
   isDragging = false,
   isPreview = false,
+  isEnemyHover = false,
 }: YourCellProps) {
   // Check for rotate variant
   const hasRotate = state.endsWith("-rotate");
@@ -204,6 +206,39 @@ export default function YourCell({
           pressStyle={{ backgroundColor: "$neutral_400" }}
         >
           <ArrowsClockwise size={12} weight="regular" color="#141a23" />
+        </View>
+      )}
+
+      {/* Enemy hover indicator - primary target (PvP only) */}
+      {isEnemyHover && (
+        <View
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          justifyContent="center"
+          alignItems="center"
+        >
+          {/* Outer ring */}
+          <View
+            position="absolute"
+            width={28}
+            height={28}
+            borderRadius="$round"
+            borderWidth={2}
+            borderColor="$primary_500"
+            opacity={0.6}
+          />
+          {/* Inner crosshair */}
+          <View
+            width={12}
+            height={12}
+            borderRadius="$round"
+            borderWidth={2}
+            borderColor="$primary_500"
+            backgroundColor="transparent"
+          />
         </View>
       )}
     </View>

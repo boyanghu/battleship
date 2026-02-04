@@ -23,6 +23,7 @@ import type * as games_mutations_fireShot from "../games/mutations/fireShot.js";
 import type * as games_mutations_forfeitGame from "../games/mutations/forfeitGame.js";
 import type * as games_mutations_joinGame from "../games/mutations/joinGame.js";
 import type * as games_mutations_setReady from "../games/mutations/setReady.js";
+import type * as games_mutations_updateHover from "../games/mutations/updateHover.js";
 import type * as games_queries_getGame from "../games/queries/getGame.js";
 import type * as games_queries_listGameEvents from "../games/queries/listGameEvents.js";
 import type * as lib_constants from "../lib/constants.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   "games/mutations/forfeitGame": typeof games_mutations_forfeitGame;
   "games/mutations/joinGame": typeof games_mutations_joinGame;
   "games/mutations/setReady": typeof games_mutations_setReady;
+  "games/mutations/updateHover": typeof games_mutations_updateHover;
   "games/queries/getGame": typeof games_queries_getGame;
   "games/queries/listGameEvents": typeof games_queries_listGameEvents;
   "lib/constants": typeof lib_constants;

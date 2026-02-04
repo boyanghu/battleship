@@ -15,6 +15,7 @@ export {
   fireShot,
   advanceTurnIfExpired,
   forfeitGame,
+  updateHover,
   getGame,
   listGameEvents
 } from "./routes/games";

@@ -15,6 +15,7 @@ import { commitPlacementHandler } from "../games/mutations/commitPlacement";
 import { fireShotHandler } from "../games/mutations/fireShot";
 import { advanceTurnIfExpiredHandler } from "../games/mutations/advanceTurnIfExpired";
 import { forfeitGameHandler } from "../games/mutations/forfeitGame";
+import { updateHoverHandler } from "../games/mutations/updateHover";
 import { getGameHandler } from "../games/queries/getGame";
 import { listGameEventsHandler } from "../games/queries/listGameEvents";
 
@@ -155,6 +156,20 @@ export const forfeitGame = mutation({
     deviceId: v.string()
   },
   handler: forfeitGameHandler
+});
+
+/**
+ * Update hover position for real-time enemy hover visualization
+ * Phase guard: battle only (PvP only)
+ * Turn guard: only current turn player
+ */
+export const updateHover = mutation({
+  args: {
+    gameId: v.id("games"),
+    deviceId: v.string(),
+    coord: v.union(coord, v.null())
+  },
+  handler: updateHoverHandler
 });
 
 // =============================================================================

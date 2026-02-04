@@ -42,12 +42,13 @@ export const advanceTurnIfExpiredHandler = async (
     reason: "timeout"
   });
 
-  // Advance turn to opponent
+  // Advance turn to opponent - also clear hover state since turn changed
   await ctx.db.patch(args.gameId, {
     currentTurnDeviceId: opponentDeviceId,
     turnStartedAt: timestamp,
     turnDurationMs: TURN_DURATION_MS,
-    updatedAt: timestamp
+    updatedAt: timestamp,
+    hoverState: undefined // Clear hover when turn changes
   });
 
   await appendEvent(ctx, args.gameId, "TURN_ADVANCED", {

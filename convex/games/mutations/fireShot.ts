@@ -103,7 +103,8 @@ export const fireShotHandler = async (
       winnerDeviceId: args.deviceId,
       currentTurnDeviceId: undefined,
       turnStartedAt: undefined,
-      updatedAt: timestamp
+      updatedAt: timestamp,
+      hoverState: undefined // Clear hover when game ends
     });
 
     await appendEvent(ctx, args.gameId, "GAME_FINISHED", {
@@ -114,13 +115,14 @@ export const fireShotHandler = async (
     return { result, sunkShipType, gameOver: true, winner: args.deviceId };
   }
 
-  // Advance turn to opponent
+  // Advance turn to opponent - also clear hover state since turn changed
   await ctx.db.patch(args.gameId, {
     boards,
     currentTurnDeviceId: opponentDeviceId,
     turnStartedAt: timestamp,
     turnDurationMs: TURN_DURATION_MS,
-    updatedAt: timestamp
+    updatedAt: timestamp,
+    hoverState: undefined // Clear hover when turn changes
   });
 
   await appendEvent(ctx, args.gameId, "TURN_ADVANCED", {

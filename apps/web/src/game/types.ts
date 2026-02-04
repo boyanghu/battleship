@@ -95,6 +95,12 @@ export interface GameUIState {
   guidance: Guidance | null;
 }
 
+// Coordinate pair (for server communication)
+export interface Coord {
+  x: number;
+  y: number;
+}
+
 // Board constants
 export const BOARD_SIZE = 10;
 export const COLUMNS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];

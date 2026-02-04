@@ -23,6 +23,8 @@ interface BoardProps {
   enemyCells?: Map<Coordinate, EnemyCellState>;
   yourCells?: Map<Coordinate, YourCellState>;
   onCellPress?: (coordinate: Coordinate) => void;
+  enemyHoverCoord?: Coordinate | null; // Enemy's hover position on your board (PvP)
+  onCellHover?: (coordinate: Coordinate | null) => void; // Report hover position to server (PvP)
 }
 
 const CELL_SIZE = 32;
@@ -42,6 +44,8 @@ export default function Board({
   enemyCells,
   yourCells,
   onCellPress,
+  enemyHoverCoord = null,
+  onCellHover,
 }: BoardProps) {
   const [hoveredCell, setHoveredCell] = useState<Coordinate | null>(null);
 
@@ -109,8 +113,22 @@ export default function Board({
               state={cellState}
               isGlow={isRecommended}
               onPress={disabled ? undefined : () => handleCellPress(coordinate)}
-              onHoverIn={disabled ? undefined : () => setHoveredCell(coordinate)}
-              onHoverOut={disabled ? undefined : () => setHoveredCell(null)}
+              onHoverIn={
+                disabled
+                  ? undefined
+                  : () => {
+                      setHoveredCell(coordinate);
+                      onCellHover?.(coordinate);
+                    }
+              }
+              onHoverOut={
+                disabled
+                  ? undefined
+                  : () => {
+                      setHoveredCell(null);
+                      onCellHover?.(null);
+                    }
+              }
             />
           );
         } else {
@@ -118,10 +136,14 @@ export default function Board({
           const cellState: YourCellState =
             yourCells?.get(coordinate) ?? "neutral";
 
+          // Check if enemy is hovering over this cell (PvP)
+          const isEnemyHover = enemyHoverCoord === coordinate;
+
           cells.push(
             <YourCell
               key={coordinate}
               state={cellState}
+              isEnemyHover={isEnemyHover}
               onHoverIn={() => setHoveredCell(coordinate)}
               onHoverOut={() => setHoveredCell(null)}
             />

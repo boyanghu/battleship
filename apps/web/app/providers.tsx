@@ -9,7 +9,15 @@ import config from "@/tamagui.config";
 import { AnalyticsProvider } from "@/lib/analytics";
 
 export default function Providers({ children }: PropsWithChildren) {
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? "";
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+
+  if (!convexUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_CONVEX_URL environment variable is not set. " +
+        "Please configure it in your Vercel project settings."
+    );
+  }
+
   const client = useMemo(() => new ConvexReactClient(convexUrl), [convexUrl]);
 
   return (
