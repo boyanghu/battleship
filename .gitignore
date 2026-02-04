@@ -13,6 +13,7 @@ dist/
 
 # Tamagui
 .tamagui/
+apps/web/public/tamagui.css
 
 # debug
 npm-debug.*
