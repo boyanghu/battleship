@@ -43,7 +43,7 @@ export default function HomeScreen() {
     if (!deviceId || creating) return;
     setCreating(true);
     try {
-      const result = await createGame({ deviceId });
+      const result = await createGame({ deviceId, mode: "pvp" });
       router.push(`/game/${result.gameId}`);
     } finally {
       setCreating(false);
