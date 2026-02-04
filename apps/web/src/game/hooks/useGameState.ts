@@ -419,9 +419,11 @@ export function useGameState({
 
   // Call server to advance turn when timer expires
   // Server is the source of truth - it validates the turn actually expired
+  // IMPORTANT: Either player's client can call this - not just the player whose turn it is
+  // This ensures the game progresses even if one player disconnects
   useEffect(() => {
-    // Only run during battle phase when it's our turn
-    if (phase !== "battle" || turn !== "you") {
+    // Only run during battle phase
+    if (phase !== "battle") {
       return;
     }
 
@@ -444,7 +446,7 @@ export function useGameState({
       return;
     }
 
-    console.log("Turn expired, calling advanceTurnIfExpired");
+    console.log("Turn expired, calling advanceTurnIfExpired (current turn:", turn, ")");
     lastExpiredTurnRef.current = game.turnStartedAt;
 
     // Let server handle the turn timeout
