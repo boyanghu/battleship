@@ -17,6 +17,8 @@ interface BoardProps {
   side: BoardSide;
   label: string;
   isActive?: boolean;
+  highlighted?: boolean; // Visual emphasis state
+  disabled?: boolean; // Prevents all interactions
   recommendedCell?: Coordinate | null;
   enemyCells?: Map<Coordinate, EnemyCellState>;
   yourCells?: Map<Coordinate, YourCellState>;
@@ -34,6 +36,8 @@ export default function Board({
   side,
   label,
   isActive = false,
+  highlighted = true,
+  disabled = false,
   recommendedCell = null,
   enemyCells,
   yourCells,
@@ -41,20 +45,37 @@ export default function Board({
 }: BoardProps) {
   const [hoveredCell, setHoveredCell] = useState<Coordinate | null>(null);
 
-  // Border color based on side (from Figma design system)
+  // Border color based on side and highlight state (from Figma design system)
   // Enemy = primary (blue), Player = secondary (orange)
-  const borderColor = side === "enemy" ? "$primary_600" : "$secondary_500";
+  // De-emphasized boards use dimmer colors
+  const getBorderColor = () => {
+    if (!highlighted) {
+      return "$neutral_700"; // De-emphasized
+    }
+    return side === "enemy" ? "$primary_600" : "$secondary_500";
+  };
+  const borderColor = getBorderColor();
 
-  // Label color based on side
-  const labelColor = side === "enemy" ? "$primary_400" : "$secondary_400";
+  // Label color based on side and highlight state
+  const getLabelColor = () => {
+    if (!highlighted) {
+      return "$neutral_500"; // De-emphasized
+    }
+    return side === "enemy" ? "$primary_400" : "$secondary_400";
+  };
+  const labelColor = getLabelColor();
+
+  // Opacity for de-emphasized state
+  const boardOpacity = highlighted ? 1 : 0.6;
 
   const handleCellPress = useCallback(
     (coordinate: Coordinate) => {
-      if (side === "enemy" && onCellPress) {
+      // Only allow pressing enemy cells when not disabled
+      if (side === "enemy" && onCellPress && !disabled) {
         onCellPress(coordinate);
       }
     },
-    [side, onCellPress]
+    [side, onCellPress, disabled]
   );
 
   // Generate coordinate from row/col indices
@@ -70,13 +91,14 @@ export default function Board({
     for (let row = 0; row < BOARD_SIZE; row++) {
       for (let col = 0; col < BOARD_SIZE; col++) {
         const coordinate = toCoord(row, col);
-        const isRecommended = recommendedCell === coordinate;
-        const isHovered = hoveredCell === coordinate;
+        const isRecommended = recommendedCell === coordinate && !disabled;
+        const isHovered = hoveredCell === coordinate && !disabled;
 
         if (side === "enemy") {
           // Enemy cell - get state from map
           let cellState: EnemyCellState =
             enemyCells?.get(coordinate) ?? "neutral";
+          // Only show hover state if not disabled
           if (isHovered && cellState === "neutral") {
             cellState = "hover";
           }
@@ -86,9 +108,9 @@ export default function Board({
               key={coordinate}
               state={cellState}
               isGlow={isRecommended}
-              onPress={() => handleCellPress(coordinate)}
-              onHoverIn={() => setHoveredCell(coordinate)}
-              onHoverOut={() => setHoveredCell(null)}
+              onPress={disabled ? undefined : () => handleCellPress(coordinate)}
+              onHoverIn={disabled ? undefined : () => setHoveredCell(coordinate)}
+              onHoverOut={disabled ? undefined : () => setHoveredCell(null)}
             />
           );
         } else {
@@ -112,8 +134,8 @@ export default function Board({
   };
 
   return (
-    <YStack alignItems="center" gap="$2">
-      {/* Board title label */}
+    <YStack alignItems="center" gap="$2" opacity={boardOpacity}>
+      {/* Board title label (LOCKED COPY) */}
       <UText variant="label-sm" color={labelColor}>
         {label}
       </UText>
@@ -130,6 +152,7 @@ export default function Board({
           gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
           gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
           gap: `${CELL_GAP}px`,
+          cursor: disabled ? "not-allowed" : undefined,
         }}
       >
         {renderCells()}
@@ -137,7 +160,7 @@ export default function Board({
 
       {/* Bottom label - shows hovered cell coordinate */}
       <View height={16}>
-        {hoveredCell && (
+        {hoveredCell && !disabled && (
           <UText variant="label-sm" color="$neutral_400">
             {hoveredCell.charAt(0)}:{hoveredCell.slice(1)}
           </UText>

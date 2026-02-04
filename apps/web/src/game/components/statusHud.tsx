@@ -52,15 +52,22 @@ export default function StatusHud({
   // Phase display text
   const phaseText = phase.toUpperCase();
 
-  // Center text: phase-aware
-  const getCenterText = () => {
+  // Center text: phase-aware (LOCKED COPY)
+  const getCenterContent = () => {
     if (phase === "placement") {
-      return "POSITION YOUR FLEET";
+      return { title: "POSITION YOUR FLEET", subtitle: null };
     }
-    return turn === "you" ? "YOUR TURN" : "ENEMY TURN";
+    if (phase === "finished") {
+      return { title: "BATTLE COMPLETE", subtitle: null };
+    }
+    // Battle phase
+    if (turn === "you") {
+      return { title: "YOUR MOVE", subtitle: "Select a target" };
+    }
+    return { title: "ENEMY MOVING", subtitle: "Awaiting strike" };
   };
 
-  const centerText = getCenterText();
+  const { title: centerTitle, subtitle: centerSubtitle } = getCenterContent();
   const centerColor = phase === "placement"
     ? "$secondary_500"
     : turn === "you"
@@ -104,10 +111,17 @@ export default function StatusHud({
             </UText>
           </View>
 
-          {/* Center text - phase-aware */}
-          <UText variant="h2" color={centerColor}>
-            {centerText}
-          </UText>
+          {/* Center text - phase-aware (LOCKED COPY) */}
+          <View alignItems="center">
+            <UText variant="h2" color={centerColor}>
+              {centerTitle}
+            </UText>
+            {centerSubtitle && (
+              <UText variant="label-sm" color="$neutral_400">
+                {centerSubtitle}
+              </UText>
+            )}
+          </View>
 
           {/* Timer - red when below 5 seconds */}
           <View width={80}>

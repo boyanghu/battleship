@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { View } from "tamagui";
+import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import useAnalytics from "@/lib/analytics/useAnalytics";
 import {
@@ -21,12 +21,17 @@ interface BattlePhaseProps {
 /**
  * Battle phase - the main command console experience.
  * HUD overlay pattern with battlefield as primary surface.
+ *
+ * Board focus rules:
+ * - When my turn: enemy board highlighted, interactive; my board de-emphasized
+ * - When enemy turn: my board highlighted; enemy board de-emphasized, non-interactive
+ * - When finished: both boards de-emphasized, non-interactive
  */
 export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   const { Event } = useAnalytics();
 
   // Game state from Convex
-  const { state, isLoading, fireAt } = useGameState({ gameId, deviceId });
+  const { state, isLoading, isFiring, fireAt } = useGameState({ gameId, deviceId });
 
   // Event builder for guidance execute button
   const executeEventBuilder = useMemo(
@@ -66,6 +71,10 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   }
 
   const isPlayerTurn = state.turn === "you";
+  const isFinished = state.phase === "finished";
+
+  // Disable interactions when firing (waiting for resolution) or game finished
+  const isDisabled = isFiring || isFinished;
 
   return (
     <View flex={1} backgroundColor="$bg" position="relative">
@@ -100,11 +109,13 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
           yourCells={state.yourCells}
           recommendedCell={state.guidance?.coordinate}
           onFireAt={handleFireAt}
+          disabled={isDisabled}
+          isFinished={isFinished}
         />
       </View>
 
-      {/* Guidance Strip - Bottom (only on player's turn) */}
-      {isPlayerTurn && state.guidance && (
+      {/* Guidance Strip - Bottom (only on player's turn when not finished) */}
+      {isPlayerTurn && state.guidance && !isFinished && (
         <View
           position="absolute"
           bottom={31}
@@ -117,6 +128,32 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
             onExecute={handleExecute}
             eventBuilder={executeEventBuilder}
           />
+        </View>
+      )}
+
+      {/* End State Overlay */}
+      {isFinished && (
+        <View
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          justifyContent="center"
+          alignItems="center"
+          zIndex={20}
+          // @ts-expect-error - style prop for overlay
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }}
+        >
+          <YStack alignItems="center" gap="$4">
+            <UText variant="hxl" color="$neutral_200">
+              BATTLE COMPLETE
+            </UText>
+            <UText variant="h2" color="$neutral_400">
+              {/* Winner will be determined from game state */}
+              Game Over
+            </UText>
+          </YStack>
         </View>
       )}
     </View>

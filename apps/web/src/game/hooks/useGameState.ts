@@ -75,9 +75,18 @@ interface UseGameStateOptions {
   deviceId: string | null;
 }
 
+// Shot outcome for feedback
+export interface ShotOutcome {
+  coordinate: Coordinate;
+  result: "miss" | "hit" | "sunk";
+  shipName?: string;
+}
+
 interface UseGameStateResult {
   state: GameUIState | null;
   isLoading: boolean;
+  isFiring: boolean; // True while waiting for shot resolution
+  lastOutcome: ShotOutcome | null; // Last shot result for feedback
   fireAt: (coordinate: Coordinate) => void;
 }
 
@@ -154,6 +163,18 @@ export function useGameState({
   // Timer state (in milliseconds)
   const [timeRemainingMs, setTimeRemainingMs] = useState(0);
 
+  // Firing state - tracks when we're waiting for shot resolution
+  const [isFiring, setIsFiring] = useState(false);
+  const [pendingShotCoord, setPendingShotCoord] = useState<Coordinate | null>(null);
+  const [lastOutcome, setLastOutcome] = useState<ShotOutcome | null>(null);
+  const [lastShotCount, setLastShotCount] = useState(0);
+
+  // Get opponent's deviceId (defined early for use in effects below)
+  const opponentDeviceId = useMemo(() => {
+    if (!game || !deviceId) return null;
+    return game.players.find((p) => p.deviceId !== deviceId)?.deviceId ?? null;
+  }, [game, deviceId]);
+
   // Countdown timer effect - updates every 100ms for smooth display
   useEffect(() => {
     if (!game?.turnStartedAt || !game?.turnDurationMs) {
@@ -173,11 +194,60 @@ export function useGameState({
     return () => clearInterval(interval);
   }, [game?.turnStartedAt, game?.turnDurationMs]);
 
-  // Get opponent's deviceId
-  const opponentDeviceId = useMemo(() => {
-    if (!game || !deviceId) return null;
-    return game.players.find((p) => p.deviceId !== deviceId)?.deviceId ?? null;
-  }, [game, deviceId]);
+  // Track shot count to detect when shot resolves
+  const currentShotCount = useMemo(() => {
+    if (!game || !opponentDeviceId) return 0;
+    const opponentBoard = game.boards[opponentDeviceId];
+    return opponentBoard?.shotsReceived?.length ?? 0;
+  }, [game, opponentDeviceId]);
+
+  // Stub for audio/visual feedback - call this when shot resolves
+  const onShotResolved = useCallback((outcome: ShotOutcome) => {
+    // TODO: Trigger visual feedback (screen flash, cell animation)
+    // TODO: Trigger audio feedback (hit sound, miss sound, sunk sound)
+    console.log("Shot resolved:", outcome);
+  }, []);
+
+  // Detect shot resolution - when shot count increases while firing
+  useEffect(() => {
+    if (!isFiring || !pendingShotCoord) return;
+
+    // Shot resolved when count increases
+    if (currentShotCount > lastShotCount) {
+      // Get the last shot (the one we just fired)
+      if (game && opponentDeviceId) {
+        const opponentBoard = game.boards[opponentDeviceId];
+        const shots = opponentBoard?.shotsReceived ?? [];
+        const lastShot = shots[shots.length - 1];
+
+        if (lastShot) {
+          const outcome: ShotOutcome = {
+            coordinate: coordToString(lastShot.coord),
+            result: lastShot.result,
+            shipName: lastShot.sunkShipType
+              ? SHIP_NAMES[lastShot.sunkShipType]
+              : undefined,
+          };
+          setLastOutcome(outcome);
+
+          // Trigger audio/visual feedback hooks
+          onShotResolved(outcome);
+        }
+      }
+
+      // Clear firing state
+      setIsFiring(false);
+      setPendingShotCoord(null);
+      setLastShotCount(currentShotCount);
+    }
+  }, [currentShotCount, isFiring, pendingShotCoord, lastShotCount, game, opponentDeviceId, onShotResolved]);
+
+  // Update lastShotCount when not firing (sync with server state)
+  useEffect(() => {
+    if (!isFiring) {
+      setLastShotCount(currentShotCount);
+    }
+  }, [currentShotCount, isFiring]);
 
   // Determine turn ownership based on game state
   const turn: TurnOwner = useMemo(() => {
@@ -358,9 +428,14 @@ export function useGameState({
     battleLog,
   ]);
 
-  // Fire at coordinate (real mutation)
+  // Fire at coordinate (real mutation with input locking)
   const fireAt = useCallback(
     async (coordinate: Coordinate) => {
+      // Prevent firing if already firing, not our turn, or no deviceId
+      if (isFiring) {
+        console.warn("Cannot fire: already firing");
+        return;
+      }
       if (!deviceId || turn !== "you") {
         console.warn("Cannot fire: not your turn or no deviceId");
         return;
@@ -370,22 +445,33 @@ export function useGameState({
       const x = col.charCodeAt(0) - 65; // A=0, B=1, etc.
       const y = row - 1; // 1-indexed to 0-indexed
 
+      // Lock input until shot resolves
+      setIsFiring(true);
+      setPendingShotCoord(coordinate);
+      setLastOutcome(null); // Clear previous outcome
+
       try {
         await fireShotMutation({
           gameId: typedGameId,
           deviceId,
           coord: { x, y },
         });
+        // Note: isFiring will be cleared when shot count increases (in effect above)
       } catch (error) {
         console.error("Failed to fire shot:", error);
+        // Unlock on error
+        setIsFiring(false);
+        setPendingShotCoord(null);
       }
     },
-    [deviceId, turn, fireShotMutation, typedGameId]
+    [isFiring, deviceId, turn, fireShotMutation, typedGameId]
   );
 
   return {
     state,
     isLoading: game === undefined,
+    isFiring,
+    lastOutcome,
     fireAt,
   };
 }
