@@ -2,9 +2,16 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { View, YStack } from "tamagui";
-import { FixedSizeList as List } from "react-window";
+import dynamic from "next/dynamic";
 import { UText } from "@/lib/components/core/text";
 import { type BattleLogEntry } from "../types";
+import type { FixedSizeList as FixedSizeListType } from "react-window";
+
+// Dynamically import react-window with SSR disabled
+const FixedSizeList = dynamic(
+  () => import("react-window").then((mod) => mod.FixedSizeList),
+  { ssr: false }
+) as typeof FixedSizeListType;
 
 interface BattleLogProps {
   entries: BattleLogEntry[];
@@ -29,7 +36,7 @@ const ITEM_HEIGHT = 50; // Height of each entry row
  * Color coding: YOU = secondary (orange), ENEMY = primary (blue)
  */
 export default function BattleLog({ entries }: BattleLogProps) {
-  const listRef = useRef<List>(null);
+  const listRef = useRef<FixedSizeListType>(null);
 
   // Auto-scroll to bottom when new entries arrive
   useEffect(() => {
@@ -74,7 +81,7 @@ export default function BattleLog({ entries }: BattleLogProps) {
             No actions yet.
           </UText>
         ) : (
-          <List
+          <FixedSizeList
             ref={listRef}
             height={Math.min(LIST_HEIGHT, entries.length * ITEM_HEIGHT)}
             width={LIST_WIDTH}
@@ -82,7 +89,7 @@ export default function BattleLog({ entries }: BattleLogProps) {
             itemSize={ITEM_HEIGHT}
           >
             {Row}
-          </List>
+          </FixedSizeList>
         )}
       </YStack>
     </View>
