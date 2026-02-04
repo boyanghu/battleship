@@ -45,7 +45,7 @@ export default function BattleLog({ entries }: BattleLogProps) {
     >
       <YStack gap={10}>
         {/* Header - fixed */}
-        <UText variant="label-md" color="$neutral_400" textAlign="right">
+        <UText variant="label-md" color="$neutral_400" textAlign="center">
           BATTLE LOG
         </UText>
 
@@ -61,7 +61,7 @@ export default function BattleLog({ entries }: BattleLogProps) {
           <ScrollView
             ref={scrollRef}
             maxHeight={MAX_ENTRIES_HEIGHT}
-            showsVerticalScrollIndicator
+            showsVerticalScrollIndicator={false}
           >
             <YStack gap={8}>
               {entries.map((entry) => (
