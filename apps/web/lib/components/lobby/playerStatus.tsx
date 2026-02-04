@@ -17,20 +17,30 @@ const stateLabels: Record<PlayerState, string> = {
   ready: "READY",
 };
 
-const stateColors: Record<PlayerState, string> = {
-  waiting: "#8e9aaf", // neutral_400
-  connected: "#22c55e", // green
-  ready: "#22c55e", // green
+/**
+ * Get dot color based on role and state.
+ * YOU = secondary color (orange), OPPONENT = primary color (blue)
+ */
+const getDotColor = (role: PlayerRole, state: PlayerState): string => {
+  if (state === "waiting") {
+    return "$neutral_400";
+  }
+  // Connected or ready: use role-specific color
+  return role === "you" ? "$secondary_500" : "$primary_500";
 };
 
 /**
  * Player status row showing role and connection state.
  * Used in lobby to show YOU and OPPONENT status.
+ * 
+ * Color convention:
+ * - YOU (current user): Secondary color (orange)
+ * - OPPONENT: Primary color (blue)
  */
 const PlayerStatus = ({ role, state }: PlayerStatusProps) => {
   const label = role === "you" ? "YOU" : "OPPONENT";
   const statusLabel = stateLabels[state];
-  const dotColor = stateColors[state];
+  const dotColor = getDotColor(role, state);
 
   return (
     <XStack

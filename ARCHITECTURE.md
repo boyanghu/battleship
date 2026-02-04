@@ -98,3 +98,15 @@ Client identity:
 - `apps/web/tamagui.config.ts` - tokens and theme
 - `convex/schema.ts` - database schema
 - `convex/games.ts` - game mutations and queries
+
+---
+
+## 7) Design System Conventions
+
+Player color identity:
+
+- **YOU (current user)**: Secondary color palette (orange) - `$secondary_500` for active states
+- **OPPONENT**: Primary color palette (blue) - `$primary_500` for active states
+- **Waiting/inactive**: Neutral color - `$neutral_400`
+
+This convention applies to status indicators, player badges, and any UI element that distinguishes between the current player and their opponent.
