@@ -416,6 +416,8 @@ export function useGameState({
   const lastAutoFiredTurnRef = useRef<number | null>(null);
 
   // Auto-fire when timer hits 0 and it's our turn
+  // IMPORTANT: We calculate remaining time inline to avoid stale state issues
+  // (timeRemainingMs state might not have updated yet when this effect runs)
   useEffect(() => {
     // Skip if not in battle phase or not our turn
     if (phase !== "battle" || turn !== "you") {
@@ -427,13 +429,18 @@ export function useGameState({
       return;
     }
 
-    // Skip if timer hasn't expired yet
-    if (timeRemainingMs > 0) {
+    // Skip if no valid turn timestamp (means turn hasn't started properly)
+    if (!game?.turnStartedAt || !game?.turnDurationMs) {
       return;
     }
 
-    // Skip if no valid turn timestamp (means turn hasn't started properly)
-    if (!game?.turnStartedAt) {
+    // Calculate actual remaining time INLINE (don't rely on timeRemainingMs state)
+    // This avoids race conditions where timeRemainingMs hasn't updated yet
+    const actualEndTime = game.turnStartedAt + game.turnDurationMs;
+    const actualRemaining = actualEndTime - Date.now();
+
+    // Skip if timer hasn't actually expired (with 100ms tolerance for timing)
+    if (actualRemaining > 100) {
       return;
     }
 
@@ -448,7 +455,7 @@ export function useGameState({
       return;
     }
 
-    console.log("Auto-firing at:", targetCoord);
+    console.log("Auto-firing at:", targetCoord, "actualRemaining:", actualRemaining);
     lastAutoFiredTurnRef.current = game.turnStartedAt;
 
     // Fire at the recommended coordinate
@@ -467,8 +474,9 @@ export function useGameState({
     phase,
     turn,
     isFiring,
-    timeRemainingMs,
+    timeRemainingMs, // Still depend on this to trigger re-checks as timer updates
     game?.turnStartedAt,
+    game?.turnDurationMs,
     cachedRecommendation,
     enemyCells,
     fireShotMutation,
