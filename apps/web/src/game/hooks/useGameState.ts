@@ -432,21 +432,27 @@ export function useGameState({
       return;
     }
 
-    // Calculate actual remaining time inline (avoid stale state)
-    const actualEndTime = game.turnStartedAt + game.turnDurationMs;
-    const actualRemaining = actualEndTime - Date.now();
-
-    // Skip if timer hasn't actually expired (with small tolerance)
-    if (actualRemaining > 100) {
-      return;
-    }
-
     // Skip if we already called this for this turn
     if (lastExpiredTurnRef.current === game.turnStartedAt) {
       return;
     }
 
-    console.log("Turn expired, calling advanceTurnIfExpired (current turn:", turn, ")");
+    // Check if timer expired using the state value
+    // timeRemainingMs is clamped to 0, so this triggers when it reaches 0
+    if (timeRemainingMs > 0) {
+      return;
+    }
+
+    // Double-check with actual time calculation (handles edge cases)
+    const actualEndTime = game.turnStartedAt + game.turnDurationMs;
+    const actualRemaining = actualEndTime - Date.now();
+
+    // Skip if timer hasn't actually expired (with 500ms tolerance for clock skew)
+    if (actualRemaining > 500) {
+      return;
+    }
+
+    console.log("Turn expired, calling advanceTurnIfExpired (current turn:", turn, ", timeRemainingMs:", timeRemainingMs, ")");
     lastExpiredTurnRef.current = game.turnStartedAt;
 
     // Let server handle the turn timeout
@@ -456,12 +462,47 @@ export function useGameState({
   }, [
     phase,
     turn,
-    timeRemainingMs, // Depend on this to trigger checks as timer updates
+    timeRemainingMs, // Primary trigger - when this hits 0
     game?.turnStartedAt,
     game?.turnDurationMs,
     advanceTurnIfExpiredMutation,
     typedGameId,
   ]);
+
+  // Additional safety: Poll for expired turn every second during battle
+  // This catches cases where the timer effect doesn't trigger properly
+  useEffect(() => {
+    if (phase !== "battle") {
+      return;
+    }
+
+    const checkExpired = () => {
+      if (!game?.turnStartedAt || !game?.turnDurationMs) {
+        return;
+      }
+
+      // Skip if we already called this for this turn
+      if (lastExpiredTurnRef.current === game.turnStartedAt) {
+        return;
+      }
+
+      const actualEndTime = game.turnStartedAt + game.turnDurationMs;
+      const actualRemaining = actualEndTime - Date.now();
+
+      if (actualRemaining <= 0) {
+        console.log("Poll detected expired turn, calling advanceTurnIfExpired");
+        lastExpiredTurnRef.current = game.turnStartedAt;
+        advanceTurnIfExpiredMutation({ gameId: typedGameId }).catch((error) => {
+          console.error("Failed to advance turn (poll):", error);
+        });
+      }
+    };
+
+    // Check every second as a safety net
+    const interval = setInterval(checkExpired, 1000);
+
+    return () => clearInterval(interval);
+  }, [phase, game?.turnStartedAt, game?.turnDurationMs, advanceTurnIfExpiredMutation, typedGameId]);
 
   // Build battle log from both boards' shots, sorted by timestamp
   const battleLog = useMemo(() => {
