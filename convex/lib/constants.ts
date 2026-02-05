@@ -34,3 +34,6 @@ export const REQUIRED_SHIPS = [
   "submarine",
   "destroyer"
 ];
+
+// Maximum timeouts before auto-forfeit
+export const MAX_TIMEOUTS = 3;

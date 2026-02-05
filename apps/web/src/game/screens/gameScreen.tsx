@@ -15,6 +15,7 @@ import {
   BattlePhase,
   FinishedPhase,
 } from "../components";
+import { useForfeitOnBack } from "../hooks";
 
 interface GameScreenProps {
   gameId: string;
@@ -47,6 +48,14 @@ export default function GameScreen({ gameId }: GameScreenProps) {
     if (!deviceId) return;
     joinGame({ gameId: typedGameId, deviceId });
   }, [deviceId, typedGameId, joinGame]);
+
+  // Intercept browser back button during active game phases
+  useForfeitOnBack({
+    gameId,
+    deviceId,
+    activePhases: ["placement", "battle"],
+    currentPhase: game?.status ?? "",
+  });
 
   // Loading state
   if (!game || !deviceId) {

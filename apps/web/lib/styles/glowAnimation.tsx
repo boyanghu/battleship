@@ -18,6 +18,22 @@ const glowBoxShadowExpanded = `
   0px -3px 30px -2px #ff9b00
 `.trim().replace(/\n/g, " ");
 
+// Error glow shadow values from Figma (destructive/red colors)
+const errorGlowBoxShadow = `
+  0px 2px 4px 0px #ff4d4f,
+  0px 4px 26px -4px #3b82f6,
+  0px -1px 4px 0px #ff4d4f,
+  0px -2px 24px -4px #e23c3e
+`.trim().replace(/\n/g, " ");
+
+// Expanded error glow for pulsate peak
+const errorGlowBoxShadowExpanded = `
+  0px 2px 6px 2px #ff4d4f,
+  0px 6px 32px -2px #3b82f6,
+  0px -1px 6px 2px #ff4d4f,
+  0px -3px 30px -2px #e23c3e
+`.trim().replace(/\n/g, " ");
+
 interface GlowAnimationOptions {
   /** Animation duration in ms (default: 1000) */
   duration?: number;
@@ -101,5 +117,80 @@ export const useGlowAnimation = (options: GlowAnimationOptions = {}) => {
   };
 };
 
+/**
+ * Generates CSS keyframes for pulsating error glow animation.
+ */
+export const getErrorGlowKeyframes = (animationName: string) => `
+@keyframes ${animationName} {
+  0%, 100% {
+    box-shadow: ${errorGlowBoxShadow};
+  }
+  50% {
+    box-shadow: ${errorGlowBoxShadowExpanded};
+  }
+}
+`;
+
+/**
+ * Returns the style object for applying error glow animation.
+ */
+export const getErrorGlowStyle = (
+  animationName: string,
+  options: GlowAnimationOptions = {}
+): React.CSSProperties => {
+  const { duration = 1000, enabled = true } = options;
+
+  if (!enabled) {
+    return { boxShadow: errorGlowBoxShadow };
+  }
+
+  return {
+    animation: `${animationName} ${duration}ms ease-in-out infinite`,
+  };
+};
+
+/**
+ * Static error glow style (no animation)
+ */
+export const staticErrorGlowStyle: React.CSSProperties = {
+  boxShadow: errorGlowBoxShadow,
+};
+
+/**
+ * Hook that provides error glow animation styles and keyframes.
+ * Same as useGlowAnimation but with red/destructive colors.
+ *
+ * @example
+ * ```tsx
+ * function MyComponent() {
+ *   const { ErrorGlowStyles, errorGlowStyle } = useErrorGlowAnimation({ enabled: isLowTime });
+ *
+ *   return (
+ *     <>
+ *       <ErrorGlowStyles />
+ *       <View style={errorGlowStyle}>Content</View>
+ *     </>
+ *   );
+ * }
+ * ```
+ */
+export const useErrorGlowAnimation = (options: GlowAnimationOptions = {}) => {
+  const id = useId();
+  const animationName = `pulse-error-glow-${id.replace(/:/g, "")}`;
+  const keyframes = getErrorGlowKeyframes(animationName);
+  const errorGlowStyle = getErrorGlowStyle(animationName, options);
+
+  const ErrorGlowStyles = () => (
+    <style dangerouslySetInnerHTML={{ __html: keyframes }} />
+  );
+
+  return {
+    animationName,
+    keyframes,
+    errorGlowStyle,
+    ErrorGlowStyles,
+  };
+};
+
 // Export shadow values for reuse
-export { glowBoxShadow, glowBoxShadowExpanded };
+export { glowBoxShadow, glowBoxShadowExpanded, errorGlowBoxShadow, errorGlowBoxShadowExpanded };

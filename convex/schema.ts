@@ -18,6 +18,7 @@ const player = v.object({
   deviceId: v.string(),
   ready: v.boolean(),
   placementCommitted: v.optional(v.boolean()), // Tracks explicit placement commit
+  timeoutCount: v.optional(v.number()), // Number of turn timeouts (defaults to 0)
   joinedAt: v.number(),
   lastSeenAt: v.number()
 });
@@ -52,6 +53,7 @@ const shot = v.object({
   coord: v.object({ x: v.number(), y: v.number() }),
   result: shotResult,
   sunkShipType: v.optional(shipType),
+  sunkShipCells: v.optional(v.array(v.object({ x: v.number(), y: v.number() }))), // All cells of sunk ship
   timestamp: v.number() // When the shot was fired
 });
 

@@ -360,8 +360,6 @@ export default function PlacementPhase({
           phase="placement"
           turn="you"
           timeRemainingMs={timeRemainingMs}
-          enemyShipsRemaining={5}
-          playerShipsRemaining={5}
         />
 
         {/* Center content */}

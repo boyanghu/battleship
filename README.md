@@ -41,6 +41,8 @@ pnpm dev
 
 # Battleship — Approach & Design Notes
 
+[Live link](https://battleship-web-gamma.vercel.app/)
+
 ## Goal and Philosophy
 
 My main goal with this take-home was simple: make something that’s actually fun to play, while showing how I think about shipping a real product end to end.

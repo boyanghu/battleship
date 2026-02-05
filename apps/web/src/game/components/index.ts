@@ -5,8 +5,8 @@ export { default as Board } from "./board";
 export { default as EnemyCell } from "./enemyCell";
 export { default as YourCell } from "./yourCell";
 export { default as GuidanceStrip } from "./guidanceStrip";
-export { default as ShipScoreboard } from "./shipScoreboard";
 export { default as CellMarker } from "./cellMarker";
+export { default as PlayerStatusSidebar } from "./playerStatusSidebar";
 export type { MarkerType } from "./cellMarker";
 
 // Effects components

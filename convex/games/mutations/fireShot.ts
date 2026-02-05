@@ -77,7 +77,7 @@ export const fireShotHandler = async (
   );
 
   // Process the shot - resolve and update board
-  const { result, sunkShipType, updatedBoards } = processShot(
+  const { result, sunkShipType, sunkShipCells, updatedBoards } = processShot(
     game.boards,
     opponentDeviceId,
     args.coord,
@@ -89,7 +89,7 @@ export const fireShotHandler = async (
     ctx,
     args.gameId,
     "SHOT_RESOLVED",
-    { deviceId: args.deviceId, coord: args.coord, result, sunkShipType },
+    { deviceId: args.deviceId, coord: args.coord, result, sunkShipType, sunkShipCells },
     args.deviceId
   );
 

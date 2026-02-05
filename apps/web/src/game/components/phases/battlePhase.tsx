@@ -9,8 +9,11 @@ import {
   BattleLog,
   Battlefield,
   GuidanceStrip,
-  ShipScoreboard,
+  PlayerStatusSidebar,
 } from "../index";
+
+// Max timeouts before forfeit (must match backend constant)
+const MAX_TIMEOUTS = 3;
 import { type EffectInstance } from "../effects";
 import { useGameState, useThrottledHover } from "../../hooks";
 import { type Coordinate } from "../../types";
@@ -170,16 +173,6 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
           phase={state.phase}
           turn={state.turn}
           timeRemainingMs={state.timeRemainingMs}
-          enemyShipsRemaining={state.enemyShipsRemaining}
-          playerShipsRemaining={state.playerShipsRemaining}
-        />
-      </View>
-
-      {/* Ship Scoreboard - Below HUD */}
-      <View position="absolute" top={95} left={0} right={0} zIndex={10}>
-        <ShipScoreboard
-          enemySunkShips={state.enemySunkShips}
-          playerSunkShips={state.playerSunkShips}
         />
       </View>
 
@@ -192,6 +185,23 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
         style={{ transform: "translateY(-50%)" } as React.CSSProperties}
       >
         <BattleLog entries={state.battleLog} />
+      </View>
+
+      {/* Player Status Sidebar - Right Side, Vertically Centered */}
+      <View
+        position="absolute"
+        right={31}
+        top="50%"
+        zIndex={10}
+        style={{ transform: "translateY(-50%)" } as React.CSSProperties}
+      >
+        <PlayerStatusSidebar
+          playerShipsHealth={state.playerShipsHealth}
+          enemySunkShips={state.enemySunkShips}
+          playerTimeoutCount={state.playerTimeoutCount}
+          enemyTimeoutCount={state.enemyTimeoutCount}
+          maxTimeouts={MAX_TIMEOUTS}
+        />
       </View>
 
       {/* Battlefield - Center */}

@@ -47,6 +47,13 @@ interface Board {
   shotsReceived: Shot[];
 }
 
+// Ship health info for sidebar
+export interface ShipHealth {
+  shipType: string;
+  hitsRemaining: number; // health left (ship.length - hits taken)
+  isSunk: boolean;
+}
+
 // Full game UI state
 interface GameUIState {
   phase: GamePhase;
@@ -56,6 +63,9 @@ interface GameUIState {
   playerShipsRemaining: number;
   enemySunkShips: string[]; // Ship types sunk by player (e.g., ["destroyer", "submarine"])
   playerSunkShips: string[]; // Ship types sunk by enemy (e.g., ["carrier"])
+  playerShipsHealth: ShipHealth[]; // Health info for each player ship
+  playerTimeoutCount: number; // Number of timeouts for player
+  enemyTimeoutCount: number; // Number of timeouts for enemy
   enemyCells: Map<Coordinate, EnemyCellState>;
   yourCells: Map<Coordinate, YourCellState>;
   battleLog: BattleLogEntry[];
@@ -409,12 +419,24 @@ export function useGameState({
     };
   }, [game, opponentDeviceId]);
 
-  // Calculate player ships remaining and track which are sunk
-  const { playerShipsRemaining, playerSunkShips } = useMemo(() => {
-    if (!game || !deviceId) return { playerShipsRemaining: 5, playerSunkShips: [] as string[] };
+  // Calculate player ships remaining, track which are sunk, and calculate health for each ship
+  const { playerShipsRemaining, playerSunkShips, playerShipsHealth } = useMemo(() => {
+    if (!game || !deviceId) {
+      return {
+        playerShipsRemaining: 5,
+        playerSunkShips: [] as string[],
+        playerShipsHealth: [] as ShipHealth[],
+      };
+    }
 
     const myBoard = game.boards[deviceId];
-    if (!myBoard) return { playerShipsRemaining: 5, playerSunkShips: [] as string[] };
+    if (!myBoard) {
+      return {
+        playerShipsRemaining: 5,
+        playerSunkShips: [] as string[],
+        playerShipsHealth: [] as ShipHealth[],
+      };
+    }
 
     // Track sunk ships from shots received on our board
     const sunkShipTypes: string[] = [];
@@ -426,9 +448,32 @@ export function useGameState({
       }
     }
 
+    // Build hit coordinates set for efficient lookup
+    const hitCoords = new Set(
+      myBoard.shotsReceived
+        .filter((s) => s.result === "hit" || s.result === "sunk")
+        .map((s) => `${s.coord.x},${s.coord.y}`)
+    );
+
+    // Calculate health for each ship
+    const shipsHealth: ShipHealth[] = myBoard.ships.map((ship) => {
+      const shipCells = getShipCells(ship);
+      const hitsOnShip = shipCells.filter((cell) =>
+        hitCoords.has(`${cell.x},${cell.y}`)
+      ).length;
+      const isSunk = hitsOnShip === ship.length;
+
+      return {
+        shipType: ship.shipType,
+        hitsRemaining: ship.length - hitsOnShip,
+        isSunk,
+      };
+    });
+
     return {
       playerShipsRemaining: 5 - sunkShipTypes.length,
       playerSunkShips: sunkShipTypes,
+      playerShipsHealth: shipsHealth,
     };
   }, [game, deviceId]);
 
@@ -580,6 +625,21 @@ export function useGameState({
     return coordToString(game.enemyHoverCoord);
   }, [game?.enemyHoverCoord]);
 
+  // Get timeout counts for player and enemy
+  const { playerTimeoutCount, enemyTimeoutCount } = useMemo(() => {
+    if (!game || !deviceId) {
+      return { playerTimeoutCount: 0, enemyTimeoutCount: 0 };
+    }
+
+    const playerData = game.players.find((p) => p.deviceId === deviceId);
+    const enemyData = game.players.find((p) => p.deviceId !== deviceId);
+
+    return {
+      playerTimeoutCount: playerData?.timeoutCount ?? 0,
+      enemyTimeoutCount: enemyData?.timeoutCount ?? 0,
+    };
+  }, [game, deviceId]);
+
   // Build battle log from both boards' shots, sorted by timestamp
   const battleLog = useMemo(() => {
     const entries: BattleLogEntry[] = [];
@@ -638,6 +698,9 @@ export function useGameState({
       playerShipsRemaining,
       enemySunkShips,
       playerSunkShips,
+      playerShipsHealth,
+      playerTimeoutCount,
+      enemyTimeoutCount,
       enemyCells,
       yourCells,
       battleLog,
@@ -653,6 +716,9 @@ export function useGameState({
     playerShipsRemaining,
     enemySunkShips,
     playerSunkShips,
+    playerShipsHealth,
+    playerTimeoutCount,
+    enemyTimeoutCount,
     enemyCells,
     yourCells,
     battleLog,

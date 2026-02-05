@@ -3,28 +3,31 @@
 import { View, XStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { glassEffectStyle } from "@/lib/styles";
+import { useErrorGlowAnimation } from "@/lib/styles/glowAnimation";
 import { type GamePhase, type TurnOwner } from "../types";
 
 interface StatusHudProps {
   phase: GamePhase;
   turn: TurnOwner;
   timeRemainingMs: number;
-  enemyShipsRemaining: number;
-  playerShipsRemaining: number;
 }
 
 /**
  * Top status bar with glass effect.
- * Layout from Figma: [ENEMY X] | PHASE | CENTER TEXT | TIMER | [YOU X]
+ * Layout from Figma: PHASE | CENTER TEXT | TIMER
  * Center text shows "POSITION YOUR FLEET" during placement, turn indicator otherwise.
+ * Shows error glow animation when time < 5 seconds.
  */
 export default function StatusHud({
   phase,
   turn,
   timeRemainingMs,
-  enemyShipsRemaining,
-  playerShipsRemaining,
 }: StatusHudProps) {
+  // Error glow animation when time is low
+  const isLowTime = timeRemainingMs <= 5000 && timeRemainingMs > 0;
+  const { ErrorGlowStyles, errorGlowStyle } = useErrorGlowAnimation({
+    enabled: isLowTime,
+  });
   // Format time based on remaining time
   // Above 5s: MM:SS format
   // Below 5s: X.X format (deciseconds)
@@ -68,79 +71,52 @@ export default function StatusHud({
       ? "$secondary_500"
       : "$primary_500";
 
+  // Combine glass effect with error glow when active
+  const containerStyle = isLowTime
+    ? { ...glassEffectStyle, ...errorGlowStyle }
+    : glassEffectStyle;
+
   return (
-    <XStack justifyContent="center" alignItems="center" gap="$3">
-      {/* Enemy ships badge */}
-      <View
-        paddingHorizontal="$6"
-        paddingVertical="$3"
-        borderRadius={14}
-        style={glassEffectStyle}
-      >
-        <XStack gap="$2" alignItems="center">
-          <UText variant="label-sm" color="$primary_500">
-            ENEMY
-          </UText>
-          <UText variant="label-lg" color="$neutral_200">
-            {enemyShipsRemaining}
-          </UText>
-        </XStack>
-      </View>
-
-      {/* Center status container */}
-      <View
-        paddingHorizontal="$6"
-        paddingVertical="$2"
-        borderRadius={14}
-        width={480}
-        style={glassEffectStyle}
-      >
-        <XStack justifyContent="space-between" alignItems="center">
-          {/* Phase */}
-          <View width={80}>
-            <UText variant="label-md" color="$neutral_400">
-              {phaseText}
-            </UText>
-          </View>
-
-          {/* Center text - phase-aware (LOCKED COPY) */}
-          <View alignItems="center">
-            <UText variant="h2" color={centerColor}>
-              {centerTitle}
-            </UText>
-            {centerSubtitle && (
-              <UText variant="label-sm" color="$neutral_400">
-                {centerSubtitle}
+    <>
+      <ErrorGlowStyles />
+      <XStack justifyContent="center" alignItems="center">
+        {/* Center status container with error glow when time is low */}
+        <View
+          paddingHorizontal="$6"
+          paddingVertical="$2"
+          borderRadius={14}
+          width={480}
+          style={containerStyle}
+        >
+          <XStack justifyContent="space-between" alignItems="center">
+            {/* Phase */}
+            <View width={80}>
+              <UText variant="label-md" color="$neutral_400">
+                {phaseText}
               </UText>
-            )}
-          </View>
+            </View>
 
-          {/* Timer - red when below 5 seconds */}
-          <View width={80}>
-            <UText variant="label-lg" color={timerColor} textAlign="right">
-              {formatTime(timeRemainingMs)}
-            </UText>
-          </View>
-        </XStack>
-      </View>
+            {/* Center text - phase-aware (LOCKED COPY) */}
+            <View alignItems="center">
+              <UText variant="h2" color={centerColor}>
+                {centerTitle}
+              </UText>
+              {centerSubtitle && (
+                <UText variant="label-sm" color="$neutral_400">
+                  {centerSubtitle}
+                </UText>
+              )}
+            </View>
 
-      {/* Player ships badge */}
-      <View
-        paddingHorizontal="$4"
-        paddingVertical="$3"
-        borderRadius={14}
-        width={100}
-        style={glassEffectStyle}
-      >
-        <XStack gap="$2" alignItems="center" justifyContent="center">
-          <UText variant="label-sm" color="$secondary_500">
-            You
-          </UText>
-          <UText variant="label-lg" color="$neutral_200">
-            {playerShipsRemaining}
-          </UText>
-        </XStack>
-      </View>
-    </XStack>
+            {/* Timer - red when below 5 seconds */}
+            <View width={80}>
+              <UText variant="label-lg" color={timerColor} textAlign="right">
+                {formatTime(timeRemainingMs)}
+              </UText>
+            </View>
+          </XStack>
+        </View>
+      </XStack>
+    </>
   );
 }

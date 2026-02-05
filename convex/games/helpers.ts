@@ -40,6 +40,7 @@ export interface Shot {
   coord: Coord;
   result: ShotResult;
   sunkShipType?: ShipType;
+  sunkShipCells?: Coord[]; // All cells of sunk ship (only when result === "sunk")
   timestamp: number;
 }
 
@@ -247,7 +248,7 @@ export function validatePlacement(
 export function resolveShot(
   board: Board,
   coord: Coord
-): { result: ShotResult; sunkShipType?: ShipType } {
+): { result: ShotResult; sunkShipType?: ShipType; sunkShipCells?: Coord[] } {
   // Check each ship for a hit
   for (const ship of board.ships) {
     const cells = getShipCells(ship);
@@ -265,7 +266,7 @@ export function resolveShot(
       );
 
       if (shipCellsHit.length === cells.length) {
-        return { result: "sunk", sunkShipType: ship.shipType };
+        return { result: "sunk", sunkShipType: ship.shipType, sunkShipCells: cells };
       }
 
       return { result: "hit" };
@@ -483,6 +484,7 @@ export function processShot(
 ): {
   result: ShotResult;
   sunkShipType?: ShipType;
+  sunkShipCells?: Coord[];
   updatedBoards: Record<string, Board>;
 } {
   const targetBoard = boards[targetDeviceId];
@@ -491,13 +493,14 @@ export function processShot(
   }
 
   // Resolve the shot
-  const { result, sunkShipType } = resolveShot(targetBoard, coord);
+  const { result, sunkShipType, sunkShipCells } = resolveShot(targetBoard, coord);
 
   // Create the shot record
   const newShot: Shot = {
     coord,
     result,
     sunkShipType,
+    sunkShipCells,
     timestamp
   };
 
@@ -508,7 +511,7 @@ export function processShot(
     shotsReceived: [...targetBoard.shotsReceived, newShot]
   };
 
-  return { result, sunkShipType, updatedBoards };
+  return { result, sunkShipType, sunkShipCells, updatedBoards };
 }
 
 // =============================================================================

@@ -86,7 +86,7 @@ export const executeBotMove = internalMutation({
     );
 
     // Process the shot - resolve and update board
-    const { result, sunkShipType, updatedBoards } = processShot(
+    const { result, sunkShipType, sunkShipCells, updatedBoards } = processShot(
       game.boards,
       playerDeviceId,
       targetCoord,
@@ -98,7 +98,7 @@ export const executeBotMove = internalMutation({
       ctx,
       args.gameId,
       "SHOT_RESOLVED",
-      { deviceId: BOT_DEVICE_ID, coord: targetCoord, result, sunkShipType },
+      { deviceId: BOT_DEVICE_ID, coord: targetCoord, result, sunkShipType, sunkShipCells },
       BOT_DEVICE_ID
     );
 

@@ -1,125 +1,49 @@
 /**
- * Strategist AI - Suggests optimal firing positions based on board state.
+ * Strategist AI Adapter - Wraps server-side algorithm for client use.
  *
- * Algorithm:
- * 1. Priority: Adjacent to hits (not sunk) - likely to find more of the same ship
- * 2. Fallback: Checkerboard pattern on unfired cells - statistically optimal coverage
- *
- * Time Complexity:
- * - getStrategistRecommendation: O(n) where n = number of cells (100 for 10x10 board)
+ * The core algorithm lives in convex/games/bot/strategist.ts.
+ * This adapter handles type conversion between client and server formats.
  */
 
-import { type Coordinate, type EnemyCellState, BOARD_SIZE } from "../types";
-import { stringToCoord, xyToString, isInBounds } from "./coordinates";
-
-// Adjacent directions (up, down, left, right)
-const DIRECTIONS = [
-  { dx: 0, dy: -1 }, // up
-  { dx: 0, dy: 1 },  // down
-  { dx: -1, dy: 0 }, // left
-  { dx: 1, dy: 0 },  // right
-];
+import { getBotRecommendation } from "@server/games/bot/strategist";
+import type { Shot, ShotResult } from "@server/games/helpers";
+import { type Coordinate, type EnemyCellState } from "../types";
+import { stringToCoord, coordToString } from "./coordinates";
 
 /**
- * Get unfired adjacent cells to a coordinate
+ * Map EnemyCellState to ShotResult (only fired states).
+ * Returns null for non-shot states (neutral, hover, disabled).
  */
-function getUnfiredAdjacent(
-  coord: Coordinate,
-  enemyCells: Map<Coordinate, EnemyCellState>
-): Coordinate[] {
-  const { x, y } = stringToCoord(coord);
-  const adjacent: Coordinate[] = [];
-
-  for (const { dx, dy } of DIRECTIONS) {
-    const nx = x + dx;
-    const ny = y + dy;
-
-    if (isInBounds(nx, ny)) {
-      const neighborCoord = xyToString(nx, ny);
-      const state = enemyCells.get(neighborCoord);
-
-      // Only add if unfired (no state or neutral)
-      if (!state || state === "neutral") {
-        adjacent.push(neighborCoord);
-      }
-    }
-  }
-
-  return adjacent;
+function cellStateToShotResult(state: EnemyCellState): ShotResult | null {
+  if (state === "miss") return "miss";
+  if (state === "hit") return "hit";
+  if (state === "sunk") return "sunk";
+  return null;
 }
 
 /**
- * Find all "hit" cells that are NOT part of a sunk ship.
- * These are active targets we should finish sinking.
+ * Convert client Map format to server Shot[] format.
+ * Only includes cells that have been fired upon.
  */
-function findActiveHits(
-  enemyCells: Map<Coordinate, EnemyCellState>
-): Coordinate[] {
-  const hits: Coordinate[] = [];
-
+function convertToShots(enemyCells: Map<Coordinate, EnemyCellState>): Shot[] {
+  const shots: Shot[] = [];
   enemyCells.forEach((state, coord) => {
-    // Only "hit" cells (not "sunk") indicate unfinished ships
-    if (state === "hit") {
-      hits.push(coord);
+    const result = cellStateToShotResult(state);
+    if (result) {
+      shots.push({
+        coord: stringToCoord(coord),
+        result,
+        timestamp: 0,
+      });
     }
   });
-
-  return hits;
-}
-
-/**
- * Get all unfired cells on the board.
- * O(n) where n = BOARD_SIZE^2 (100 cells)
- */
-function getAllUnfiredCells(
-  enemyCells: Map<Coordinate, EnemyCellState>
-): Coordinate[] {
-  const unfired: Coordinate[] = [];
-
-  for (let y = 0; y < BOARD_SIZE; y++) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
-      const coord = xyToString(x, y);
-      const state = enemyCells.get(coord);
-
-      if (!state || state === "neutral") {
-        unfired.push(coord);
-      }
-    }
-  }
-
-  return unfired;
-}
-
-/**
- * Filter cells to checkerboard pattern for optimal coverage.
- * Checkerboard means (x + y) % 2 === 0 or 1.
- * O(n) where n = cells.length
- */
-function filterCheckerboard(
-  cells: Coordinate[],
-  parity: 0 | 1
-): Coordinate[] {
-  return cells.filter((coord) => {
-    const { x, y } = stringToCoord(coord);
-    return (x + y) % 2 === parity;
-  });
-}
-
-/**
- * Pick a random element from an array.
- */
-function pickRandom<T>(arr: T[]): T | null {
-  if (arr.length === 0) return null;
-  return arr[Math.floor(Math.random() * arr.length)];
+  return shots;
 }
 
 /**
  * Strategist AI: Suggests the optimal next target.
  *
- * Strategy:
- * 1. If there are active hits (ships partially damaged), target adjacent cells
- * 2. Otherwise, use checkerboard pattern for efficient coverage
- * 3. Fall back to any unfired cell if checkerboard is exhausted
+ * Delegates to the server-side algorithm after converting types.
  *
  * @param enemyCells Map of coordinates to their current state
  * @returns Recommended coordinate to fire at, or null if no valid targets
@@ -127,44 +51,9 @@ function pickRandom<T>(arr: T[]): T | null {
 export function getStrategistRecommendation(
   enemyCells: Map<Coordinate, EnemyCellState>
 ): Coordinate | null {
-  // Priority 1: Find cells adjacent to active hits
-  const activeHits = findActiveHits(enemyCells);
-
-  if (activeHits.length > 0) {
-    // Collect all unique unfired adjacent cells
-    const adjacentCandidates = new Set<Coordinate>();
-
-    for (const hit of activeHits) {
-      const adjacent = getUnfiredAdjacent(hit, enemyCells);
-      adjacent.forEach((coord) => adjacentCandidates.add(coord));
-    }
-
-    if (adjacentCandidates.size > 0) {
-      // Pick randomly from adjacent candidates
-      return pickRandom(Array.from(adjacentCandidates));
-    }
-  }
-
-  // Priority 2: Checkerboard pattern on unfired cells
-  const allUnfired = getAllUnfiredCells(enemyCells);
-
-  if (allUnfired.length === 0) {
-    return null; // No valid targets
-  }
-
-  // Try parity 0 first (arbitrary choice), then parity 1
-  const checkerboard0 = filterCheckerboard(allUnfired, 0);
-  if (checkerboard0.length > 0) {
-    return pickRandom(checkerboard0);
-  }
-
-  const checkerboard1 = filterCheckerboard(allUnfired, 1);
-  if (checkerboard1.length > 0) {
-    return pickRandom(checkerboard1);
-  }
-
-  // Fallback: any unfired cell (shouldn't reach here normally)
-  return pickRandom(allUnfired);
+  const shots = convertToShots(enemyCells);
+  const result = getBotRecommendation(shots);
+  return result ? coordToString(result) : null;
 }
 
 /**
