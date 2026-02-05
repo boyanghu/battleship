@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { View, XStack, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { glassEffectStyle } from "@/lib/styles";
@@ -37,7 +38,7 @@ interface PlayerStatusSidebarProps {
  * Enemy card shows only which ships are sunk (no hit counts).
  * Both cards show remaining lives.
  */
-export default function PlayerStatusSidebar({
+function PlayerStatusSidebar({
   playerShipsHealth,
   enemySunkShips,
   playerTimeoutCount,
@@ -201,3 +202,5 @@ function TimeoutDots({ used, max, color }: LivesDotsProps) {
     </XStack>
   );
 }
+
+export default memo(PlayerStatusSidebar);

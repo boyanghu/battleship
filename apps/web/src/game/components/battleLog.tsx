@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { memo, useEffect, useRef, useMemo } from "react";
 import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { glassEffectStyle } from "@/lib/styles";
@@ -30,7 +30,7 @@ const MAX_ENTRIES_HEIGHT = 300;
  * - YOU sunk enemy: orange tint
  * - ENEMY sunk you: blue tint
  */
-export default function BattleLog({ entries }: BattleLogProps) {
+function BattleLog({ entries }: BattleLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new entries arrive
@@ -142,3 +142,5 @@ function BattleLogEntryRow({ entry, isLatest }: BattleLogEntryRowProps) {
     </YStack>
   );
 }
+
+export default memo(BattleLog);

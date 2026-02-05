@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { XStack } from "tamagui";
 import Board from "./board";
 import { type EffectInstance } from "./effects";
@@ -30,7 +31,7 @@ interface BattlefieldProps {
  * Active board is determined by turn ownership.
  * Enemy board is interactive on player's turn.
  */
-export default function Battlefield({
+function Battlefield({
   turn,
   enemyCells,
   yourCells,
@@ -88,3 +89,5 @@ export default function Battlefield({
     </XStack>
   );
 }
+
+export default memo(Battlefield);

@@ -58,7 +58,6 @@ export interface ShipHealth {
 interface GameUIState {
   phase: GamePhase;
   turn: TurnOwner;
-  timeRemainingMs: number;
   enemyShipsRemaining: number;
   playerShipsRemaining: number;
   enemySunkShips: string[]; // Ship types sunk by player (e.g., ["destroyer", "submarine"])
@@ -100,6 +99,7 @@ interface UseGameStateResult {
   lastOutcome: ShotOutcome | null; // Last shot result for feedback (my shot)
   lastEnemyShot: ShotOutcome | null; // Last enemy shot result for feedback
   fireAt: (coordinate: Coordinate) => void;
+  timeRemainingMs: number;
 }
 
 /**
@@ -693,7 +693,6 @@ export function useGameState({
     return {
       phase,
       turn,
-      timeRemainingMs,
       enemyShipsRemaining,
       playerShipsRemaining,
       enemySunkShips,
@@ -711,7 +710,6 @@ export function useGameState({
     game,
     phase,
     turn,
-    timeRemainingMs,
     enemyShipsRemaining,
     playerShipsRemaining,
     enemySunkShips,
@@ -770,6 +768,7 @@ export function useGameState({
     lastOutcome,
     lastEnemyShot,
     fireAt,
+    timeRemainingMs,
   };
 }
 

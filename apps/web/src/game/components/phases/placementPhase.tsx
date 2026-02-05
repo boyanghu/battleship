@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, YStack } from "tamagui";
 import { useMutation } from "convex/react";
 import type { Id } from "@server/_generated/dataModel";
@@ -21,6 +21,7 @@ import {
 import {
   type Ship,
   type ShipType,
+  type Coord,
   rotateAndResolve,
   getShipCells,
   coordToString,
@@ -47,6 +48,206 @@ const CELL_SIZE = 32;
 const CELL_GAP = 4;
 const BOARD_PADDING = 8;
 
+interface PlacementBoardProps {
+  boardRef: React.RefObject<HTMLDivElement>;
+  ships: Ship[];
+  draggingShipType: ShipType | null;
+  dragPreviewOrigin: Coord | null;
+  startDrag: (
+    shipType: ShipType,
+    cellIndex: number,
+    clientX: number,
+    clientY: number,
+    boardRect: DOMRect
+  ) => void;
+  rotateShip: (shipType: ShipType) => void;
+}
+
+const PlacementBoard = memo(function PlacementBoard({
+  boardRef,
+  ships,
+  draggingShipType,
+  dragPreviewOrigin,
+  startDrag,
+  rotateShip,
+}: PlacementBoardProps) {
+  const [hoveredCell, setHoveredCell] = useState<Coordinate | null>(null);
+
+  // Build cell state map from ships
+  const cellStates = useMemo(() => {
+    const map = new Map<Coordinate, YourCellState>();
+
+    for (const ship of ships) {
+      const { origin, orientation, length } = ship;
+
+      for (let i = 0; i < length; i++) {
+        const x = orientation === "horizontal" ? origin.x + i : origin.x;
+        const y = orientation === "vertical" ? origin.y + i : origin.y;
+        const coord: Coordinate = xyToString(x, y);
+
+        // Determine cell state based on position
+        let state: YourCellState;
+        if (orientation === "horizontal") {
+          if (i === 0) {
+            // Left end with rotate button
+            state = "ship-safe-left-rotate";
+          } else if (i === length - 1) {
+            state = "ship-safe-right";
+          } else {
+            state = "ship-safe-body";
+          }
+        } else {
+          if (i === 0) {
+            // Top end with rotate button
+            state = "ship-safe-top-rotate";
+          } else if (i === length - 1) {
+            state = "ship-safe-bottom";
+          } else {
+            state = "ship-safe-body";
+          }
+        }
+
+        map.set(coord, state);
+      }
+    }
+
+    return map;
+  }, [ships]);
+
+  // Map coordinates to ship types for rotate handling
+  const coordToShipType = useMemo(() => {
+    const map = new Map<Coordinate, ShipType>();
+
+    for (const ship of ships) {
+      const { origin, orientation, length, shipType } = ship;
+
+      for (let i = 0; i < length; i++) {
+        const x = orientation === "horizontal" ? origin.x + i : origin.x;
+        const y = orientation === "vertical" ? origin.y + i : origin.y;
+        const coord: Coordinate = xyToString(x, y);
+        map.set(coord, shipType);
+      }
+    }
+
+    return map;
+  }, [ships]);
+
+  // Preview cells for dragging ship
+  const previewCells = useMemo(() => {
+    if (!draggingShipType || !dragPreviewOrigin) return new Set<Coordinate>();
+
+    const ship = ships.find((s) => s.shipType === draggingShipType);
+    if (!ship) return new Set<Coordinate>();
+
+    const previewShip = { ...ship, origin: dragPreviewOrigin };
+    const cells = getShipCells(previewShip);
+
+    return new Set(cells.map((c) => coordToString(c)));
+  }, [draggingShipType, dragPreviewOrigin, ships]);
+
+  // Handle drag start on a ship cell
+  const handleDragStart = useCallback(
+    (shipType: ShipType, cellIndex: number) => (e: React.MouseEvent) => {
+      if (!boardRef.current) return;
+      // Prevent text selection during drag
+      e.preventDefault();
+      const rect = boardRef.current.getBoundingClientRect();
+      startDrag(shipType, cellIndex, e.clientX, e.clientY, rect);
+    },
+    [boardRef, startDrag]
+  );
+
+  // Render board cells
+  const cells = useMemo(() => {
+    const rendered: JSX.Element[] = [];
+
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        const coordinate = xyToString(col, row);
+        const cellState = cellStates.get(coordinate) ?? "neutral";
+        const shipType = coordToShipType.get(coordinate);
+
+        // Only add rotate handler for cells with rotate state
+        const hasRotate = cellState.endsWith("-rotate");
+        const handleRotate =
+          hasRotate && shipType ? () => rotateShip(shipType) : undefined;
+
+        // Check if this cell belongs to the dragging ship
+        const isDragging = draggingShipType && shipType === draggingShipType;
+
+        // Check if this cell is in the preview position
+        const isPreview = previewCells.has(coordinate) && !isDragging;
+
+        // Calculate cell index for drag start
+        const ship = shipType
+          ? ships.find((s) => s.shipType === shipType)
+          : null;
+        let cellIndex = 0;
+        if (ship) {
+          if (ship.orientation === "horizontal") {
+            cellIndex = col - ship.origin.x;
+          } else {
+            cellIndex = row - ship.origin.y;
+          }
+        }
+
+        rendered.push(
+          <YourCell
+            key={coordinate}
+            state={cellState}
+            onRotate={handleRotate}
+            onDragStart={shipType ? handleDragStart(shipType, cellIndex) : undefined}
+            isDragging={isDragging ?? false}
+            isPreview={isPreview}
+            onHoverIn={() => setHoveredCell(coordinate)}
+            onHoverOut={() => setHoveredCell(null)}
+          />
+        );
+      }
+    }
+
+    return rendered;
+  }, [
+    cellStates,
+    coordToShipType,
+    draggingShipType,
+    previewCells,
+    rotateShip,
+    handleDragStart,
+    ships,
+  ]);
+
+  return (
+    <>
+      <View
+        ref={boardRef}
+        borderWidth={1}
+        borderColor="$secondary_500"
+        borderRadius={14}
+        padding={BOARD_PADDING}
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
+          gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
+          gap: `${CELL_GAP}px`,
+          userSelect: "none",
+        } as React.CSSProperties}
+      >
+        {cells}
+      </View>
+
+      {/* Bottom label - shows hovered cell coordinate */}
+      <View height={16}>
+        {hoveredCell && (
+          <UText variant="label-sm" color="$neutral_400">
+            {hoveredCell.charAt(0)}:{hoveredCell.slice(1)}
+          </UText>
+        )}
+      </View>
+    </>
+  );
+});
+
 /**
  * Placement phase - position your fleet before battle.
  * Ships are pre-generated randomly on join. Player can rotate ships before committing.
@@ -67,7 +268,6 @@ export default function PlacementPhase({
   const [ships, setShips] = useState<Ship[]>(initialShips);
   const [isCommitting, setIsCommitting] = useState(false);
   const [timeRemainingMs, setTimeRemainingMs] = useState(0);
-  const [hoveredCell, setHoveredCell] = useState<Coordinate | null>(null);
 
   const commitPlacement = useMutation(api.games.commitPlacement);
   const advanceFromPlacement = useMutation(api.games.advanceFromPlacement);
@@ -134,15 +334,36 @@ export default function PlacementPhase({
     autoDeployedRef.current = true;
 
     // Commit current placement before time runs out
+    Event()
+      .setProductName("Placement")
+      .setComponentName("AutoDeploy")
+      .setAction("Attempt")
+      .setProperties({ auto: true })
+      .log();
     commitPlacement({
       gameId: typedGameId,
       deviceId,
       ships,
-    }).catch((error) => {
-      console.error("Auto-deploy failed:", error);
-      // Don't reset ref on error - we don't want to retry auto-deploy
-    });
-  }, [timeRemainingMs, isCommitting, commitPlacement, typedGameId, deviceId, ships]);
+    })
+      .then(() => {
+        Event()
+          .setProductName("Placement")
+          .setComponentName("AutoDeploy")
+          .setAction("Success")
+          .setProperties({ auto: true })
+          .log();
+      })
+      .catch((error) => {
+        Event()
+          .setProductName("Placement")
+          .setComponentName("AutoDeploy")
+          .setAction("Error")
+          .setProperties({ auto: true })
+          .log();
+        console.error("Auto-deploy failed:", error);
+        // Don't reset ref on error - we don't want to retry auto-deploy
+      });
+  }, [Event, timeRemainingMs, isCommitting, commitPlacement, typedGameId, deviceId, ships]);
 
   // Auto-advance when timer expires
   useEffect(() => {
@@ -192,165 +413,56 @@ export default function PlacementPhase({
   }, [draggingShipType, updateDrag, endDrag, cancelDrag]);
 
   // Rotate a ship with collision resolution
-  const rotateShip = useCallback((shipType: ShipType) => {
-    setShips((prev) => rotateAndResolve(prev, shipType));
-  }, []);
+  const rotateShip = useCallback(
+    (shipType: ShipType) => {
+      const currentShip = ships.find((ship) => ship.shipType === shipType);
+      Event()
+        .setProductName("Placement")
+        .setComponentName("RotateShip")
+        .setAction("Change")
+        .setProperties({
+          shipType,
+          from: currentShip?.orientation ?? null,
+        })
+        .log();
+      setShips((prev) => rotateAndResolve(prev, shipType));
+    },
+    [Event, ships]
+  );
 
   // Commit placement to server
   const handleCommit = useCallback(async () => {
     if (isCommitting) return;
     setIsCommitting(true);
+    Event()
+      .setProductName("Placement")
+      .setComponentName("DeployFleet")
+      .setAction("Attempt")
+      .setProperties({ auto: false })
+      .log();
     try {
       await commitPlacement({
         gameId: typedGameId,
         deviceId,
         ships,
       });
+      Event()
+        .setProductName("Placement")
+        .setComponentName("DeployFleet")
+        .setAction("Success")
+        .setProperties({ auto: false })
+        .log();
     } catch (error) {
+      Event()
+        .setProductName("Placement")
+        .setComponentName("DeployFleet")
+        .setAction("Error")
+        .setProperties({ auto: false })
+        .log();
       console.error("Failed to commit placement:", error);
       setIsCommitting(false);
     }
-  }, [isCommitting, commitPlacement, typedGameId, deviceId, ships]);
-
-  // Build cell state map from ships
-  const cellStates = useMemo(() => {
-    const map = new Map<Coordinate, YourCellState>();
-
-    for (const ship of ships) {
-      const { origin, orientation, length, shipType } = ship;
-
-      for (let i = 0; i < length; i++) {
-        const x = orientation === "horizontal" ? origin.x + i : origin.x;
-        const y = orientation === "vertical" ? origin.y + i : origin.y;
-        const coord: Coordinate = xyToString(x, y);
-
-        // Determine cell state based on position
-        let state: YourCellState;
-        if (orientation === "horizontal") {
-          if (i === 0) {
-            // Left end with rotate button
-            state = "ship-safe-left-rotate";
-          } else if (i === length - 1) {
-            state = "ship-safe-right";
-          } else {
-            state = "ship-safe-body";
-          }
-        } else {
-          if (i === 0) {
-            // Top end with rotate button
-            state = "ship-safe-top-rotate";
-          } else if (i === length - 1) {
-            state = "ship-safe-bottom";
-          } else {
-            state = "ship-safe-body";
-          }
-        }
-
-        // Store shipType for rotate handler lookup
-        map.set(coord, state);
-      }
-    }
-
-    return map;
-  }, [ships]);
-
-  // Map coordinates to ship types for rotate handling
-  const coordToShipType = useMemo(() => {
-    const map = new Map<Coordinate, ShipType>();
-
-    for (const ship of ships) {
-      const { origin, orientation, length, shipType } = ship;
-
-      for (let i = 0; i < length; i++) {
-        const x = orientation === "horizontal" ? origin.x + i : origin.x;
-        const y = orientation === "vertical" ? origin.y + i : origin.y;
-        const coord: Coordinate = xyToString(x, y);
-        map.set(coord, shipType);
-      }
-    }
-
-    return map;
-  }, [ships]);
-
-  // Preview cells for dragging ship
-  const previewCells = useMemo(() => {
-    if (!draggingShipType || !dragPreviewOrigin) return new Set<Coordinate>();
-
-    const ship = ships.find((s) => s.shipType === draggingShipType);
-    if (!ship) return new Set<Coordinate>();
-
-    const previewShip = { ...ship, origin: dragPreviewOrigin };
-    const cells = getShipCells(previewShip);
-
-    return new Set(cells.map((c) => coordToString(c)));
-  }, [draggingShipType, dragPreviewOrigin, ships]);
-
-  // Generate coordinate from row/col indices (note: row=y, col=x)
-  const toCoord = (row: number, col: number): Coordinate => xyToString(col, row);
-
-  // Handle drag start on a ship cell
-  const handleDragStart = useCallback(
-    (shipType: ShipType, cellIndex: number) => (e: React.MouseEvent) => {
-      if (!boardRef.current) return;
-      // Prevent text selection during drag
-      e.preventDefault();
-      const rect = boardRef.current.getBoundingClientRect();
-      startDrag(shipType, cellIndex, e.clientX, e.clientY, rect);
-    },
-    [startDrag]
-  );
-
-  // Render board cells
-  const renderCells = () => {
-    const cells = [];
-
-    for (let row = 0; row < BOARD_SIZE; row++) {
-      for (let col = 0; col < BOARD_SIZE; col++) {
-        const coordinate = toCoord(row, col);
-        const cellState = cellStates.get(coordinate) ?? "neutral";
-        const shipType = coordToShipType.get(coordinate);
-
-        // Only add rotate handler for cells with rotate state
-        const hasRotate = cellState.endsWith("-rotate");
-        const handleRotate =
-          hasRotate && shipType ? () => rotateShip(shipType) : undefined;
-
-        // Check if this cell belongs to the dragging ship
-        const isDragging = draggingShipType && shipType === draggingShipType;
-
-        // Check if this cell is in the preview position
-        const isPreview = previewCells.has(coordinate) && !isDragging;
-
-        // Calculate cell index for drag start
-        const ship = shipType
-          ? ships.find((s) => s.shipType === shipType)
-          : null;
-        let cellIndex = 0;
-        if (ship) {
-          if (ship.orientation === "horizontal") {
-            cellIndex = col - ship.origin.x;
-          } else {
-            cellIndex = row - ship.origin.y;
-          }
-        }
-
-        cells.push(
-          <YourCell
-            key={coordinate}
-            state={cellState}
-            onRotate={handleRotate}
-            onDragStart={shipType ? handleDragStart(shipType, cellIndex) : undefined}
-            isDragging={isDragging ?? false}
-            isPreview={isPreview}
-            onHoverIn={() => setHoveredCell(coordinate)}
-            onHoverOut={() => setHoveredCell(null)}
-          />
-        );
-      }
-    }
-
-    return cells;
-  };
+  }, [Event, isCommitting, commitPlacement, typedGameId, deviceId, ships]);
 
   return (
     <UPage>
@@ -370,32 +482,14 @@ export default function PlacementPhase({
               YOUR FLEET
             </UText>
 
-            {/* Board container */}
-            <View
-              ref={boardRef}
-              borderWidth={1}
-              borderColor="$secondary_500"
-              borderRadius={14}
-              padding={BOARD_PADDING}
-              style={{
-                display: "grid",
-                gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
-                gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_SIZE}px)`,
-                gap: `${CELL_GAP}px`,
-                userSelect: "none",
-              } as React.CSSProperties}
-            >
-              {renderCells()}
-            </View>
-
-            {/* Bottom label - shows hovered cell coordinate */}
-            <View height={16}>
-              {hoveredCell && (
-                <UText variant="label-sm" color="$neutral_400">
-                  {hoveredCell.charAt(0)}:{hoveredCell.slice(1)}
-                </UText>
-              )}
-            </View>
+            <PlacementBoard
+              boardRef={boardRef}
+              ships={ships}
+              draggingShipType={draggingShipType}
+              dragPreviewOrigin={dragPreviewOrigin}
+              startDrag={startDrag}
+              rotateShip={rotateShip}
+            />
           </YStack>
 
           {/* Commit button with glow */}

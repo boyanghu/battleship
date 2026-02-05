@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { View, YStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import useAnalytics from "@/lib/analytics/useAnalytics";
+import { MAX_TIMEOUTS } from "@server/lib/constants";
 import {
   StatusHud,
   BattleLog,
@@ -11,9 +12,6 @@ import {
   GuidanceStrip,
   PlayerStatusSidebar,
 } from "../index";
-
-// Max timeouts before forfeit (must match backend constant)
-const MAX_TIMEOUTS = 3;
 import { type EffectInstance } from "../effects";
 import { useGameState, useThrottledHover } from "../../hooks";
 import { type Coordinate } from "../../types";
@@ -38,7 +36,15 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   const { Event } = useAnalytics();
 
   // Game state from Convex
-  const { state, isLoading, isFiring, fireAt, lastOutcome, lastEnemyShot } = useGameState({ gameId, deviceId });
+  const {
+    state,
+    isLoading,
+    isFiring,
+    fireAt,
+    lastOutcome,
+    lastEnemyShot,
+    timeRemainingMs,
+  } = useGameState({ gameId, deviceId });
 
   // Effect system state - tracks active plume effects on both boards
   const [effects, setEffects] = useState<EffectInstance[]>([]);
@@ -107,9 +113,15 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   // Handle fire action from board click
   const handleFireAt = useCallback(
     (coordinate: Coordinate) => {
+      Event()
+        .setProductName("Game")
+        .setComponentName("FireShot")
+        .setAction("Attempt")
+        .setProperties({ source: "board", coordinate })
+        .log();
       fireAt(coordinate);
     },
-    [fireAt]
+    [Event, fireAt]
   );
 
   // Handle cell hover for real-time enemy hover visualization (PvP)
@@ -127,9 +139,30 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
   // Handle guidance execute action
   const handleExecute = useCallback(() => {
     if (state?.guidance) {
+      Event()
+        .setProductName("Game")
+        .setComponentName("FireShot")
+        .setAction("Attempt")
+        .setProperties({ source: "guidance", coordinate: state.guidance.coordinate })
+        .log();
       fireAt(state.guidance.coordinate);
     }
-  }, [fireAt, state?.guidance]);
+  }, [Event, fireAt, state?.guidance]);
+
+  // Log shot outcomes for analytics
+  useEffect(() => {
+    if (!lastOutcome) return;
+    Event()
+      .setProductName("Game")
+      .setComponentName("ShotResolved")
+      .setAction("Success")
+      .setProperties({
+        coordinate: lastOutcome.coordinate,
+        result: lastOutcome.result,
+        shipName: lastOutcome.shipName ?? null,
+      })
+      .log();
+  }, [Event, lastOutcome]);
 
   // Split effects by board (must be before early return to satisfy hooks rules)
   // - Enemy board effects: my shots (hitEnemy, miss on enemy board)
@@ -172,7 +205,7 @@ export default function BattlePhase({ gameId, deviceId }: BattlePhaseProps) {
         <StatusHud
           phase={state.phase}
           turn={state.turn}
-          timeRemainingMs={state.timeRemainingMs}
+          timeRemainingMs={timeRemainingMs}
         />
       </View>
 

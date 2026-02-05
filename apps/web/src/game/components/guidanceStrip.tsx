@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { View, XStack } from "tamagui";
 import { UText } from "@/lib/components/core/text";
 import { useGlowAnimation, glassEffectStyle } from "@/lib/styles";
@@ -23,7 +24,7 @@ const glassStyle: React.CSSProperties = {
  * Shows recommendation and execute button with pulsating glow.
  * Only visible on player's turn.
  */
-export default function GuidanceStrip({
+function GuidanceStrip({
   guidance,
   onExecute,
   eventBuilder,
@@ -95,3 +96,5 @@ export default function GuidanceStrip({
     </>
   );
 }
+
+export default memo(GuidanceStrip);
