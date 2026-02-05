@@ -5,6 +5,7 @@ import {
   StatsigProvider,
   useStatsigClient,
 } from "@statsig/react-bindings";
+import { StatsigSessionReplayPlugin } from "@statsig/session-replay";
 
 import type LogEventAction from "../types/logEventActionEnum";
 
@@ -113,7 +114,13 @@ const AnalyticsContextProvider = ({
 
 const AnalyticsProvider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <StatsigProvider sdkKey={STATSIG_CLIENT_SDK_KEY} user={{}}>
+    <StatsigProvider
+      sdkKey={STATSIG_CLIENT_SDK_KEY}
+      user={{}}
+      options={{
+        plugins: [new StatsigSessionReplayPlugin()],
+      }}
+    >
       <AnalyticsContextProvider>{children}</AnalyticsContextProvider>
     </StatsigProvider>
   );
