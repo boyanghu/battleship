@@ -6,11 +6,11 @@
 
 import { convexTest } from "convex-test";
 import { describe, it, expect, vi } from "vitest";
-import { api } from "../../_generated/api";
-import schema from "../../schema";
+import { api } from "../../../../convex/_generated/api";
+import schema from "../../../../convex/schema";
 
 // Import modules for convex-test
-const modules = import.meta.glob("../../**/*.ts");
+const modules = import.meta.glob("../../../../convex/**/*.ts");
 
 describe("createGame", () => {
   it("should create a PvP game in lobby status", async () => {

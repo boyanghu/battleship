@@ -4,7 +4,7 @@
  * Provides factory functions for creating test fixtures.
  */
 
-import type { Ship, Board, Shot, Coord, ShipType, Orientation } from "../games/helpers";
+import type { Ship, Board, Shot, Coord, ShipType, Orientation } from "../../convex/games/helpers";
 
 // =============================================================================
 // FACTORY FUNCTIONS

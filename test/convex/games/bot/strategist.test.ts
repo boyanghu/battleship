@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { getBotRecommendation } from "./strategist";
-import type { Shot, Coord } from "../helpers";
+import { getBotRecommendation } from "../../../../convex/games/bot/strategist";
+import type { Shot, Coord } from "../../../../convex/games/helpers";
 
 /**
  * Create a test shot.

@@ -18,8 +18,8 @@ import {
   type Ship,
   type Board,
   type Coord,
-} from "./helpers";
-import { createTestShip, createTestBoard, createStandardFleet, coord } from "../test/testUtils";
+} from "../../../convex/games/helpers";
+import { createTestShip, createTestBoard, createStandardFleet, coord } from "../testUtils";
 
 describe("getShipCells", () => {
   it("should return correct cells for horizontal ship", () => {
