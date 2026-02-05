@@ -7,6 +7,7 @@ import type { Id } from "@server/_generated/dataModel";
 
 import { api } from "@server/_generated/api";
 import { getOrCreateDeviceId } from "@/lib/device";
+import { useIdentifyUser } from "@/lib/analytics";
 import { UText } from "@/lib/components/core/text";
 import {
   LobbyPhase,
@@ -35,6 +36,9 @@ export default function GameScreen({ gameId }: GameScreenProps) {
   useEffect(() => {
     setDeviceId(getOrCreateDeviceId());
   }, []);
+
+  // Identify user with Statsig for session tracking
+  useIdentifyUser(deviceId);
 
   // Fetch game state (skip until deviceId is available)
   const game = useQuery(

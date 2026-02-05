@@ -12,6 +12,7 @@ import { UPage } from "@/lib/components/core/layout";
 import { UText } from "@/lib/components/core/text";
 import { UIconTextButton } from "@/lib/components/core/button";
 import useAnalytics from "@/lib/analytics/useAnalytics";
+import { useIdentifyUser } from "@/lib/analytics";
 
 /**
  * Home screen - main landing page for Battleship.
@@ -27,6 +28,9 @@ export default function HomeScreen() {
   useEffect(() => {
     setDeviceId(getOrCreateDeviceId());
   }, []);
+
+  // Identify user with Statsig for session tracking
+  useIdentifyUser(deviceId);
 
   // Memoized event builders to prevent unnecessary re-renders
   const engageButtonEvent = useMemo(
