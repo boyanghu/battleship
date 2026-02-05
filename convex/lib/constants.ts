@@ -4,8 +4,8 @@
 
 // Timing constants
 export const COUNTDOWN_DURATION_MS = 5000; // 5 seconds
-export const PLACEMENT_DURATION_MS = 30000; // 30 seconds
-export const TURN_DURATION_MS = 15000; // 15 seconds
+export const PLACEMENT_DURATION_MS = 60000; // 60 seconds
+export const TURN_DURATION_MS = 10000; // 10 seconds
 
 // Bot timing - fires between 1-3 seconds into turn (avg ~2s)
 export const BOT_MIN_DELAY_MS = 1000;

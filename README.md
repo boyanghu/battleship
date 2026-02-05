@@ -95,12 +95,11 @@ Opponent ship positions are never sent. Even if someone inspects client state or
 
 The game is strictly turn-based with hard countdowns. This was an intentional choice to make the game feel intense, closer to speed chess than a slow board game.
 
-I tested a few timings:
-- 10 seconds felt too rushed
-- 20 seconds felt too slow
-- ~15 seconds felt right
+Current timings:
+- **Placement phase**: 60 seconds to position your fleet
+- **Battle turns**: 10 seconds per turn
 
-That window keeps pressure high while still allowing real decisions. If a player hesitates, a lightweight strategist system nudges them forward without taking control away.
+The short turn window keeps pressure high while still allowing real decisions. If a player hesitates, a lightweight strategist system nudges them forward without taking control away.
 
 Even though the server is authoritative, the game feels responsive thanks to real-time updates and UX choices. For example, when a player hovers over the enemy board deciding where to fire, that intent is visible to the opponent (without revealing anything actionable). It adds suspense during downtime.
 
