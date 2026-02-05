@@ -23,8 +23,10 @@ export default function StatusHud({
   turn,
   timeRemainingMs,
 }: StatusHudProps) {
-  // Error glow animation when time is low
-  const isLowTime = timeRemainingMs <= 5000 && timeRemainingMs > 0;
+  // Error glow animation when time is low AND it's your turn
+  // Only show red glow/timer when you need to act urgently
+  const isYourTurn = turn === "you";
+  const isLowTime = timeRemainingMs <= 5000 && timeRemainingMs > 0 && isYourTurn;
   const { ErrorGlowStyles, errorGlowStyle } = useErrorGlowAnimation({
     enabled: isLowTime,
   });
@@ -43,8 +45,8 @@ export default function StatusHud({
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Timer color: red when below 5 seconds
-  const timerColor = timeRemainingMs <= 5000 ? "$destructive_500" : "$neutral_200";
+  // Timer color: red when below 5 seconds AND it's your turn
+  const timerColor = isLowTime ? "$destructive_500" : "$neutral_200";
 
   // Phase display text
   const phaseText = phase.toUpperCase();

@@ -35,7 +35,7 @@ interface PlayerStatusSidebarProps {
  *
  * Player card shows ship health (hits remaining).
  * Enemy card shows only which ships are sunk (no hit counts).
- * Both cards show timeout dots (lives).
+ * Both cards show remaining lives.
  */
 export default function PlayerStatusSidebar({
   playerShipsHealth,
@@ -92,10 +92,10 @@ export default function PlayerStatusSidebar({
           {/* Divider */}
           <Divider />
 
-          {/* Timeouts */}
+          {/* Lives */}
           <YStack gap="$1" alignItems="center">
             <UText variant="label-sm" color="$neutral_200">
-              TIMEOUTS
+              LIVES
             </UText>
             <TimeoutDots
               used={playerTimeoutCount}
@@ -147,10 +147,10 @@ export default function PlayerStatusSidebar({
           {/* Divider */}
           <Divider />
 
-          {/* Timeouts */}
+          {/* Lives */}
           <YStack gap="$1" alignItems="center">
             <UText variant="label-sm" color="$neutral_200">
-              TIMEOUTS
+              LIVES
             </UText>
             <TimeoutDots
               used={enemyTimeoutCount}
@@ -171,17 +171,17 @@ function Divider() {
   return <View height={1} backgroundColor="$neutral_700" width={116} />;
 }
 
-interface TimeoutDotsProps {
-  used: number; // Number of timeouts used
-  max: number; // Maximum timeouts allowed
+interface LivesDotsProps {
+  used: number; // Number of lives used
+  max: number; // Maximum lives allowed
   color: string; // Color for filled dots
 }
 
 /**
- * Timeout dots showing remaining lives.
- * Filled dots = lives remaining, empty dots = lives used.
+ * Lives indicator dots.
+ * Filled dots = lives remaining, empty dots = lives lost.
  */
-function TimeoutDots({ used, max, color }: TimeoutDotsProps) {
+function TimeoutDots({ used, max, color }: LivesDotsProps) {
   const remaining = max - used;
 
   return (
